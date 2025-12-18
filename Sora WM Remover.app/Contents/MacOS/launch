@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Sora Watermark Remover - App Launcher
+APP_DIR="/Users/alexandercarver/Documents/Sora Watermark Remover"
+
+# Check if already running
+if curl -s http://localhost:5001 > /dev/null 2>&1; then
+    # Already running, just open browser
+    open "http://localhost:5001"
+else
+    # Start the server in background
+    cd "$APP_DIR"
+    ./venv/bin/python app.py &
+    
+    # Wait for server to start
+    for i in {1..30}; do
+        if curl -s http://localhost:5001 > /dev/null 2>&1; then
+            break
+        fi
+        sleep 0.5
+    done
+    
+    # Open browser
+    open "http://localhost:5001"
+fi
+
