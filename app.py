@@ -75,28 +75,12 @@ def extract_preview_frame(video_path, frame_number=0):
     return None
 
 
-def apply_effect(frame, mask, method='mosaic'):
-    """Apply heavy mosaic effect to hide watermark."""
-    frame_copy = frame.copy()
-    
-    # Get bounding box of mask region
-    coords = np.where(mask > 0)
-    if len(coords[0]) == 0:
-        return frame_copy
-    y1, y2 = coords[0].min(), coords[0].max()
-    x1, x2 = coords[1].min(), coords[1].max()
-    h, w = y2 - y1, x2 - x1
-    if h <= 0 or w <= 0:
-        return frame_copy
-    
-    # Heavy mosaic - 20px blocks
-    roi = frame[y1:y2, x1:x2]
-    pixel_size = 20
-    small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
-    pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
-    roi_mask = mask[y1:y2, x1:x2]
-    frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
-    return frame_copy
+def apply_effect(frame, mask, method='blend'):
+    """Blend watermark area into surroundings using inpainting."""
+    # Use OpenCV inpainting - fills the masked area by sampling from surrounding pixels
+    # This makes the watermark area blend naturally into its surroundings
+    result = cv2.inpaint(frame, mask, inpaintRadius=7, flags=cv2.INPAINT_TELEA)
+    return result
 
 
 def process_video(video_path, mask_data, output_path, callback=None):

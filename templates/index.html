@@ -749,7 +749,7 @@
                         <div class="toolbar-divider"></div>
                         
                         <div class="toolbar-group">
-                            <span class="toolbar-label" style="color: var(--accent);">Effect: Heavy Mosaic</span>
+                            <span class="toolbar-label" style="color: var(--accent);">Effect: Blend (fills from surroundings)</span>
                         </div>
                     </div>
 
@@ -807,7 +807,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'mosaic';
+        let selectedMethod = 'blend';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1193,7 +1193,7 @@
             
             // Short labels for each effect
             const labels = {
-                'mosaic': 'M'
+                'blend': 'B'
             };
             
             // Draw all masks for current video
@@ -1227,7 +1227,7 @@
             }
             
             const effectNames = {
-                'mosaic': 'Heavy Mosaic'
+                'blend': 'Blend'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
