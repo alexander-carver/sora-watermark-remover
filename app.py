@@ -80,14 +80,14 @@ def apply_effect(frame, mask, method='blur'):
     frame_copy = frame.copy()
     
     if method == 'blur':
-        # Heavy Gaussian blur
-        blurred = cv2.GaussianBlur(frame, (99, 99), 50)
+        # Medium-heavy blur with different parameters
+        blurred = cv2.GaussianBlur(frame, (75, 75), 35)
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
         
     elif method == 'blur-light':
-        # Lighter blur
-        blurred = cv2.GaussianBlur(frame, (31, 31), 15)
+        # Softer, more natural blur
+        blurred = cv2.bilateralFilter(frame, 25, 80, 80)
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
         
