@@ -379,32 +379,42 @@
             border-color: var(--accent);
         }
 
-        .tool-btn.blur {
+        .tool-btn.blur, .tool-btn[data-method="blur"] {
             border-color: var(--telea-color);
             color: var(--telea-color);
         }
 
-        .tool-btn.blur.active {
+        .tool-btn.blur.active, .tool-btn[data-method="blur"].active {
             background: var(--telea-color);
             color: #000;
         }
 
-        .tool-btn.pixelate {
+        .tool-btn.blur-light, .tool-btn[data-method="blur-light"] {
+            border-color: #66ccff;
+            color: #66ccff;
+        }
+
+        .tool-btn.blur-light.active, .tool-btn[data-method="blur-light"].active {
+            background: #66ccff;
+            color: #000;
+        }
+
+        .tool-btn.pixelate, .tool-btn[data-method="pixelate"] {
             border-color: var(--ns-color);
             color: var(--ns-color);
         }
 
-        .tool-btn.pixelate.active {
+        .tool-btn.pixelate.active, .tool-btn[data-method="pixelate"].active {
             background: var(--ns-color);
             color: #000;
         }
 
-        .tool-btn.black {
+        .tool-btn.black, .tool-btn[data-method="black"] {
             border-color: #888;
             color: #888;
         }
 
-        .tool-btn.black.active {
+        .tool-btn.black.active, .tool-btn[data-method="black"].active {
             background: #888;
             color: #000;
         }
@@ -462,6 +472,7 @@
         }
 
         .mask-color.blur { background: var(--telea-color); }
+        .mask-color.blur-light { background: #66ccff; }
         .mask-color.pixelate { background: var(--ns-color); }
         .mask-color.black { background: #888; }
 
@@ -781,7 +792,8 @@
                         
                         <div class="toolbar-group">
                             <span class="toolbar-label">Effect:</span>
-                            <button class="tool-btn blur active" data-method="blur">Blur</button>
+                            <button class="tool-btn blur active" data-method="blur">Heavy Blur</button>
+                            <button class="tool-btn blur-light" data-method="blur-light">Light Blur</button>
                             <button class="tool-btn pixelate" data-method="pixelate">Pixelate</button>
                             <button class="tool-btn black" data-method="black">Black</button>
                         </div>
@@ -1182,9 +1194,10 @@
             
             // Draw current selection with method-specific colors
             const colors = {
-                blur: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff' },
-                pixelate: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa' },
-                black: { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888' }
+                'blur': { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff' },
+                'blur-light': { fill: 'rgba(102, 204, 255, 0.3)', stroke: '#66ccff' },
+                'pixelate': { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa' },
+                'black': { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888' }
             };
             const style = colors[selectedMethod] || colors.blur;
             
@@ -1240,11 +1253,10 @@
             
             // Color scheme for each effect
             const colors = {
-                blur: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'B' },
-                pixelate: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'P' },
-                black: { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888', label: '■' },
-                telea: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'T' },
-                ns: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'NS' }
+                'blur': { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'HB' },
+                'blur-light': { fill: 'rgba(102, 204, 255, 0.3)', stroke: '#66ccff', label: 'LB' },
+                'pixelate': { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'PX' },
+                'black': { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888', label: '■' }
             };
             
             // Draw all masks for current video
@@ -1280,11 +1292,10 @@
             }
             
             const effectNames = {
-                blur: 'Blur',
-                pixelate: 'Pixelate',
-                black: 'Black fill',
-                telea: 'Telea',
-                ns: 'Navier-Stokes'
+                'blur': 'Heavy Blur',
+                'blur-light': 'Light Blur',
+                'pixelate': 'Pixelate',
+                'black': 'Black fill'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `

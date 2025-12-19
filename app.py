@@ -77,44 +77,67 @@ def extract_preview_frame(video_path, frame_number=0):
 
 def apply_effect(frame, mask, method='blur'):
     """Apply effect to remove/hide watermark from a frame."""
+    frame_copy = frame.copy()
+    
     if method == 'blur':
-        # Simple Gaussian blur - fast and effective
-        blurred = cv2.GaussianBlur(frame, (51, 51), 30)
-        frame_copy = frame.copy()
+        # Heavy Gaussian blur
+        blurred = cv2.GaussianBlur(frame, (99, 99), 50)
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
+        
+    elif method == 'blur-light':
+        # Lighter blur
+        blurred = cv2.GaussianBlur(frame, (31, 31), 15)
+        frame_copy[mask > 0] = blurred[mask > 0]
+        return frame_copy
+        
+    elif method == 'blur-box':
+        # Box blur (more uniform)
+        blurred = cv2.blur(frame, (50, 50))
+        frame_copy[mask > 0] = blurred[mask > 0]
+        return frame_copy
+        
     elif method == 'pixelate':
         # Pixelation effect
-        frame_copy = frame.copy()
-        # Find bounding box of mask
         coords = np.where(mask > 0)
         if len(coords[0]) > 0:
             y1, y2 = coords[0].min(), coords[0].max()
             x1, x2 = coords[1].min(), coords[1].max()
-            # Pixelate the region
             roi = frame[y1:y2, x1:x2]
             h, w = roi.shape[:2]
-            # Reduce and scale back up for pixelation
-            pixel_size = 10
-            small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
-            pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
-            frame_copy[y1:y2, x1:x2] = pixelated
+            if h > 0 and w > 0:
+                pixel_size = 8
+                small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+                pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+                frame_copy[y1:y2, x1:x2] = pixelated
         return frame_copy
+        
     elif method == 'black':
-        # Simple black fill
-        frame_copy = frame.copy()
+        # Solid black fill
         frame_copy[mask > 0] = [0, 0, 0]
         return frame_copy
-    elif method == 'telea':
-        # Inpainting - Telea method
-        return cv2.inpaint(frame, mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
-    elif method == 'ns':
-        # Inpainting - Navier-Stokes method
-        return cv2.inpaint(frame, mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
+        
+    elif method == 'white':
+        # Solid white fill
+        frame_copy[mask > 0] = [255, 255, 255]
+        return frame_copy
+        
+    elif method == 'color-sample':
+        # Sample color from edge and fill (simple color match)
+        coords = np.where(mask > 0)
+        if len(coords[0]) > 0:
+            y1, y2 = coords[0].min(), coords[0].max()
+            x1, x2 = coords[1].min(), coords[1].max()
+            # Sample colors from edges
+            edge_y = max(0, y1 - 5)
+            edge_x = max(0, x1 - 5)
+            sample_color = frame[edge_y, edge_x].tolist()
+            frame_copy[mask > 0] = sample_color
+        return frame_copy
+        
     else:
-        # Default to blur
-        blurred = cv2.GaussianBlur(frame, (51, 51), 30)
-        frame_copy = frame.copy()
+        # Default to heavy blur
+        blurred = cv2.GaussianBlur(frame, (99, 99), 50)
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
 
@@ -187,27 +210,67 @@ def process_video(video_path, mask_data, output_path, callback=None):
     # Re-encode with ffmpeg and COPY AUDIO from original
     try:
         import subprocess
+        
         # Check if ffmpeg is available
-        result = subprocess.run(['which', 'ffmpeg'], capture_output=True, text=True)
-        if result.returncode == 0:
-            # Use ffmpeg to re-encode video AND copy audio from original
-            subprocess.run([
-                'ffmpeg', '-y',
-                '-i', temp_video,           # Processed video (no audio)
-                '-i', str(video_path),      # Original video (has audio)
-                '-c:v', 'libx264', '-preset', 'medium',
-                '-crf', '18', '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac', '-b:a', '192k',  # Encode audio as AAC
-                '-map', '0:v:0',            # Take video from first input
-                '-map', '1:a:0?',           # Take audio from second input (? = optional)
-                '-shortest',                # Match shortest stream
-                str(output_path)
-            ], capture_output=True)
-            os.remove(temp_video)
+        ffmpeg_path = shutil.which('ffmpeg')
+        
+        if ffmpeg_path:
+            print(f"Using ffmpeg: {ffmpeg_path}")
+            
+            # First, check if original has audio
+            probe_cmd = [
+                ffmpeg_path, '-i', str(video_path), '-hide_banner'
+            ]
+            probe_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+            has_audio = 'Audio:' in probe_result.stderr
+            
+            if has_audio:
+                print("Original video has audio - merging...")
+                # Merge processed video with original audio
+                merge_cmd = [
+                    ffmpeg_path, '-y',
+                    '-i', temp_video,           # Processed video (no audio)
+                    '-i', str(video_path),      # Original video (has audio)
+                    '-c:v', 'libx264', 
+                    '-preset', 'fast',
+                    '-crf', '20', 
+                    '-pix_fmt', 'yuv420p',
+                    '-c:a', 'aac', 
+                    '-b:a', '192k',
+                    '-map', '0:v:0',            # Video from processed
+                    '-map', '1:a:0',            # Audio from original
+                    '-shortest',
+                    str(output_path)
+                ]
+                result = subprocess.run(merge_cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    print(f"FFmpeg merge error: {result.stderr}")
+                    # Fallback: just re-encode video without audio
+                    subprocess.run([
+                        ffmpeg_path, '-y', '-i', temp_video,
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '20',
+                        str(output_path)
+                    ], capture_output=True)
+            else:
+                print("Original video has no audio - just re-encoding video...")
+                subprocess.run([
+                    ffmpeg_path, '-y', '-i', temp_video,
+                    '-c:v', 'libx264', '-preset', 'fast', '-crf', '20',
+                    '-pix_fmt', 'yuv420p',
+                    str(output_path)
+                ], capture_output=True)
+            
+            # Clean up temp file
+            if os.path.exists(temp_video):
+                os.remove(temp_video)
         else:
+            print("FFmpeg not found - using raw output")
             shutil.move(temp_video, str(output_path))
-    except Exception:
-        shutil.move(temp_video, str(output_path))
+            
+    except Exception as e:
+        print(f"FFmpeg error: {e}")
+        if os.path.exists(temp_video):
+            shutil.move(temp_video, str(output_path))
     
     return True
 
