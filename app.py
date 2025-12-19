@@ -371,20 +371,39 @@ def cleanup(job_id):
 
 @app.route('/cleanup-all', methods=['POST'])
 def cleanup_all():
-    """Clean up all temporary files."""
+    """Clean up all temporary files including processed videos."""
+    deleted_count = 0
+    
     # Clear uploads
     for f in UPLOAD_FOLDER.iterdir():
         if f.is_file():
-            f.unlink()
+            try:
+                f.unlink()
+                deleted_count += 1
+            except Exception:
+                pass
     
     # Clear frames
     for f in FRAMES_FOLDER.iterdir():
         if f.is_file():
-            f.unlink()
+            try:
+                f.unlink()
+                deleted_count += 1
+            except Exception:
+                pass
+    
+    # Clear processed videos
+    for f in PROCESSED_FOLDER.iterdir():
+        if f.is_file():
+            try:
+                f.unlink()
+                deleted_count += 1
+            except Exception:
+                pass
     
     jobs.clear()
     
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'deleted': deleted_count})
 
 
 @app.route('/processed')

@@ -1479,8 +1479,39 @@
 
         // Cleanup button
         document.getElementById('btn-cleanup').addEventListener('click', async () => {
-            await fetch('/cleanup-all', { method: 'POST' });
-            showToast('Temp files cleaned up', 'success');
+            try {
+                const response = await fetch('/cleanup-all', { method: 'POST' });
+                const data = await response.json();
+                
+                // Reset frontend state
+                queue = [];
+                currentJob = null;
+                masks = [];
+                maskHistory = [];
+                globalMasks = [];
+                drawModeEnabled = false;
+                
+                // Reset UI
+                updateDrawModeButton();
+                updateQueueUI();
+                updateMasksList();
+                updateButtonStates();
+                
+                // Hide editor
+                videoEditorWrapper.style.display = 'none';
+                editorToolbar.style.display = 'none';
+                editorPlaceholder.style.display = 'flex';
+                videoPlayer.pause();
+                videoSource.src = '';
+                
+                // Hide processed section and clear it
+                processedSection.style.display = 'none';
+                processedGrid.innerHTML = '';
+                
+                showToast(`Cleaned up ${data.deleted || 'all'} files`, 'success');
+            } catch (error) {
+                showToast('Cleanup failed: ' + error.message, 'error');
+            }
         });
 
         // Toast notifications
