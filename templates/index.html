@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Sora Watermark Remover</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -268,11 +270,6 @@
             background: #000;
             border-radius: 12px;
             overflow: hidden;
-            touch-action: manipulation;
-        }
-
-        .video-editor-wrapper.drawing-active {
-            touch-action: none;
         }
 
         .video-editor-wrapper video {
@@ -287,7 +284,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            touch-action: none;
+            z-index: 1;
         }
 
         .drawing-canvas.draw-mode {
@@ -297,6 +294,34 @@
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            z-index: 100;
+            background: rgba(0, 255, 136, 0.05);
+        }
+        
+        /* Visual indicator for draw mode on mobile */
+        .draw-mode-indicator {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            z-index: 101;
+            animation: pulse-indicator 1s infinite;
+        }
+        
+        .draw-mode-indicator.visible {
+            display: block;
+        }
+        
+        @keyframes pulse-indicator {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         /* Toolbar */
@@ -729,6 +754,7 @@
                             <source id="video-source" src="" type="video/mp4">
                         </video>
                         <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+                        <div class="draw-mode-indicator" id="draw-mode-indicator">✏️ DRAW MODE - Drag to select</div>
                     </div>
 
                     <!-- Toolbar - NO overlay, below video -->
@@ -983,19 +1009,27 @@
         btnDrawMode.addEventListener('click', () => {
             drawModeEnabled = !drawModeEnabled;
             updateDrawModeButton();
+            if (drawModeEnabled) {
+                showToast('Draw mode ON - drag on video to select watermark', 'success');
+            } else {
+                showToast('Draw mode OFF - video controls enabled', 'info');
+            }
         });
 
         function updateDrawModeButton() {
+            const indicator = document.getElementById('draw-mode-indicator');
             if (drawModeEnabled) {
                 btnDrawMode.textContent = '✏️ Draw Mode: ON';
                 btnDrawMode.classList.add('active');
                 drawingCanvas.classList.add('draw-mode');
-                videoEditorWrapper.classList.add('drawing-active');
+                indicator.classList.add('visible');
+                // Pause video when entering draw mode
+                videoPlayer.pause();
             } else {
                 btnDrawMode.textContent = '✏️ Draw Mode: OFF';
                 btnDrawMode.classList.remove('active');
                 drawingCanvas.classList.remove('draw-mode');
-                videoEditorWrapper.classList.remove('drawing-active');
+                indicator.classList.remove('visible');
             }
         }
 
@@ -1059,21 +1093,33 @@
         drawingCanvas.addEventListener('mouseleave', finishDraw);
 
         // Touch support - improved for mobile
-        drawingCanvas.addEventListener('touchstart', (e) => {
+        function handleTouchStart(e) {
             if (!drawModeEnabled || !currentJob) return;
-            e.preventDefault();
-            e.stopPropagation();
             
             const touch = e.touches[0];
             const rect = drawingCanvas.getBoundingClientRect();
-            startX = touch.clientX - rect.left;
-            startY = touch.clientY - rect.top;
-            lastX = startX;
-            lastY = startY;
-            isDrawing = true;
-        }, { passive: false });
-
-        drawingCanvas.addEventListener('touchmove', (e) => {
+            
+            // Check if touch is within canvas bounds
+            const touchX = touch.clientX;
+            const touchY = touch.clientY;
+            
+            if (touchX >= rect.left && touchX <= rect.right && 
+                touchY >= rect.top && touchY <= rect.bottom) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                startX = touchX - rect.left;
+                startY = touchY - rect.top;
+                lastX = startX;
+                lastY = startY;
+                isDrawing = true;
+                
+                // Visual feedback
+                drawingCanvas.style.background = 'rgba(0, 255, 136, 0.1)';
+            }
+        }
+        
+        function handleTouchMove(e) {
             if (!isDrawing || !drawModeEnabled) return;
             e.preventDefault();
             e.stopPropagation();
@@ -1083,18 +1129,37 @@
             lastX = touch.clientX - rect.left;
             lastY = touch.clientY - rect.top;
             drawSelection(lastX, lastY);
-        }, { passive: false });
-
-        drawingCanvas.addEventListener('touchend', (e) => {
+        }
+        
+        function handleTouchEnd(e) {
             if (!isDrawing || !drawModeEnabled) return;
             e.preventDefault();
+            drawingCanvas.style.background = '';
             finishDraw();
-        }, { passive: false });
+        }
         
-        drawingCanvas.addEventListener('touchcancel', (e) => {
+        // Add touch listeners to canvas
+        drawingCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        drawingCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        drawingCanvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+        drawingCanvas.addEventListener('touchcancel', () => {
             isDrawing = false;
+            drawingCanvas.style.background = '';
             redrawCanvas();
         });
+        
+        // Also add to document for cases where touch moves outside canvas
+        document.addEventListener('touchmove', (e) => {
+            if (isDrawing && drawModeEnabled) {
+                handleTouchMove(e);
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', (e) => {
+            if (isDrawing && drawModeEnabled) {
+                handleTouchEnd(e);
+            }
+        }, { passive: false });
 
         function drawSelection(currentX, currentY) {
             redrawCanvas();
