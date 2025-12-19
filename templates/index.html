@@ -379,23 +379,33 @@
             border-color: var(--accent);
         }
 
-        .tool-btn.telea {
+        .tool-btn.blur {
             border-color: var(--telea-color);
             color: var(--telea-color);
         }
 
-        .tool-btn.telea.active {
+        .tool-btn.blur.active {
             background: var(--telea-color);
             color: #000;
         }
 
-        .tool-btn.ns {
+        .tool-btn.pixelate {
             border-color: var(--ns-color);
             color: var(--ns-color);
         }
 
-        .tool-btn.ns.active {
+        .tool-btn.pixelate.active {
             background: var(--ns-color);
+            color: #000;
+        }
+
+        .tool-btn.black {
+            border-color: #888;
+            color: #888;
+        }
+
+        .tool-btn.black.active {
+            background: #888;
             color: #000;
         }
 
@@ -451,8 +461,9 @@
             border-radius: 4px;
         }
 
-        .mask-color.telea { background: var(--telea-color); }
-        .mask-color.ns { background: var(--ns-color); }
+        .mask-color.blur { background: var(--telea-color); }
+        .mask-color.pixelate { background: var(--ns-color); }
+        .mask-color.black { background: #888; }
 
         .mask-info {
             flex: 1;
@@ -769,9 +780,10 @@
                         <div class="toolbar-divider"></div>
                         
                         <div class="toolbar-group">
-                            <span class="toolbar-label">Method:</span>
-                            <button class="tool-btn telea active" data-method="telea">Telea</button>
-                            <button class="tool-btn ns" data-method="ns">Navier-Stokes</button>
+                            <span class="toolbar-label">Effect:</span>
+                            <button class="tool-btn blur active" data-method="blur">Blur</button>
+                            <button class="tool-btn pixelate" data-method="pixelate">Pixelate</button>
+                            <button class="tool-btn black" data-method="black">Black</button>
                         </div>
                     </div>
 
@@ -829,7 +841,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'telea';
+        let selectedMethod = 'blur';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1168,14 +1180,18 @@
         function drawSelection(currentX, currentY) {
             redrawCanvas();
             
-            // Draw current selection
-            const color = selectedMethod === 'telea' ? 'rgba(0, 170, 255, 0.3)' : 'rgba(255, 102, 170, 0.3)';
-            const stroke = selectedMethod === 'telea' ? '#00aaff' : '#ff66aa';
+            // Draw current selection with method-specific colors
+            const colors = {
+                blur: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff' },
+                pixelate: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa' },
+                black: { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888' }
+            };
+            const style = colors[selectedMethod] || colors.blur;
             
-            ctx.fillStyle = color;
+            ctx.fillStyle = style.fill;
             ctx.fillRect(startX, startY, currentX - startX, currentY - startY);
             
-            ctx.strokeStyle = stroke;
+            ctx.strokeStyle = style.stroke;
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
@@ -1222,6 +1238,15 @@
         function redrawCanvas() {
             ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
             
+            // Color scheme for each effect
+            const colors = {
+                blur: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'B' },
+                pixelate: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'P' },
+                black: { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888', label: '■' },
+                telea: { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'T' },
+                ns: { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'NS' }
+            };
+            
             // Draw all masks for current video
             const allMasks = [...masks, ...globalMasks];
             allMasks.forEach((mask, index) => {
@@ -1230,18 +1255,19 @@
                 const w = mask.width * drawingCanvas.width;
                 const h = mask.height * drawingCanvas.height;
                 
-                const isTelea = mask.method === 'telea';
-                ctx.fillStyle = isTelea ? 'rgba(0, 170, 255, 0.3)' : 'rgba(255, 102, 170, 0.3)';
+                const style = colors[mask.method] || colors.blur;
+                
+                ctx.fillStyle = style.fill;
                 ctx.fillRect(x, y, w, h);
                 
-                ctx.strokeStyle = isTelea ? '#00aaff' : '#ff66aa';
+                ctx.strokeStyle = style.stroke;
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, y, w, h);
                 
                 // Label
-                ctx.fillStyle = isTelea ? '#00aaff' : '#ff66aa';
+                ctx.fillStyle = style.stroke;
                 ctx.font = 'bold 11px sans-serif';
-                ctx.fillText(isTelea ? 'T' : 'NS', x + 4, y + 14);
+                ctx.fillText(style.label, x + 4, y + 14);
             });
         }
 
@@ -1252,13 +1278,21 @@
                 masksList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No regions selected yet</p>';
                 return;
             }
+            
+            const effectNames = {
+                blur: 'Blur',
+                pixelate: 'Pixelate',
+                black: 'Black fill',
+                telea: 'Telea',
+                ns: 'Navier-Stokes'
+            };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
                 <div class="mask-item">
                     <div class="mask-color ${mask.method}"></div>
                     <div class="mask-info">
                         <span>Region ${index + 1}</span>
-                        <span class="mask-method">${mask.method === 'telea' ? 'Telea (fast)' : 'Navier-Stokes (quality)'}</span>
+                        <span class="mask-method">${effectNames[mask.method] || 'Blur'}</span>
                     </div>
                     <button class="mask-delete" onclick="deleteMask(${index})">✕</button>
                 </div>

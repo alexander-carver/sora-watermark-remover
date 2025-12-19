@@ -75,17 +75,53 @@ def extract_preview_frame(video_path, frame_number=0):
     return None
 
 
-def apply_inpainting(frame, mask, method='telea'):
-    """Apply inpainting to remove watermark from a frame."""
-    if method == 'telea':
+def apply_effect(frame, mask, method='blur'):
+    """Apply effect to remove/hide watermark from a frame."""
+    if method == 'blur':
+        # Simple Gaussian blur - fast and effective
+        blurred = cv2.GaussianBlur(frame, (51, 51), 30)
+        frame_copy = frame.copy()
+        frame_copy[mask > 0] = blurred[mask > 0]
+        return frame_copy
+    elif method == 'pixelate':
+        # Pixelation effect
+        frame_copy = frame.copy()
+        # Find bounding box of mask
+        coords = np.where(mask > 0)
+        if len(coords[0]) > 0:
+            y1, y2 = coords[0].min(), coords[0].max()
+            x1, x2 = coords[1].min(), coords[1].max()
+            # Pixelate the region
+            roi = frame[y1:y2, x1:x2]
+            h, w = roi.shape[:2]
+            # Reduce and scale back up for pixelation
+            pixel_size = 10
+            small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+            pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+            frame_copy[y1:y2, x1:x2] = pixelated
+        return frame_copy
+    elif method == 'black':
+        # Simple black fill
+        frame_copy = frame.copy()
+        frame_copy[mask > 0] = [0, 0, 0]
+        return frame_copy
+    elif method == 'telea':
+        # Inpainting - Telea method
         return cv2.inpaint(frame, mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
-    else:
+    elif method == 'ns':
+        # Inpainting - Navier-Stokes method
         return cv2.inpaint(frame, mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
+    else:
+        # Default to blur
+        blurred = cv2.GaussianBlur(frame, (51, 51), 30)
+        frame_copy = frame.copy()
+        frame_copy[mask > 0] = blurred[mask > 0]
+        return frame_copy
 
 
 def process_video(video_path, mask_data, output_path, callback=None):
-    """Process entire video with inpainting to remove watermarks.
-    Each mask can have its own method (telea or ns)."""
+    """Process entire video to remove watermarks.
+    Each mask can have its own method (blur, pixelate, black, telea, ns)."""
     cap = cv2.VideoCapture(str(video_path))
     
     if not cap.isOpened():
@@ -97,9 +133,8 @@ def process_video(video_path, mask_data, output_path, callback=None):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
-    # Create separate masks for each method
-    telea_mask = np.zeros((height, width), dtype=np.uint8)
-    ns_mask = np.zeros((height, width), dtype=np.uint8)
+    # Group masks by method
+    masks_by_method = {}
     
     for rect in mask_data:
         x1 = int(rect['x'] * width)
@@ -114,20 +149,17 @@ def process_video(video_path, mask_data, output_path, callback=None):
         x2 = min(width, x2 + padding)
         y2 = min(height, y2 + padding)
         
-        # Add to appropriate mask based on method
-        method = rect.get('method', 'telea')
-        if method == 'ns':
-            cv2.rectangle(ns_mask, (x1, y1), (x2, y2), 255, -1)
-        else:
-            cv2.rectangle(telea_mask, (x1, y1), (x2, y2), 255, -1)
-    
-    has_telea = np.any(telea_mask)
-    has_ns = np.any(ns_mask)
+        method = rect.get('method', 'blur')
+        
+        if method not in masks_by_method:
+            masks_by_method[method] = np.zeros((height, width), dtype=np.uint8)
+        
+        cv2.rectangle(masks_by_method[method], (x1, y1), (x2, y2), 255, -1)
     
     # Setup video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    temp_output = str(output_path).replace('.mp4', '_temp.mp4')
-    out = cv2.VideoWriter(temp_output, fourcc, fps, (width, height))
+    temp_video = str(output_path).replace('.mp4', '_temp_video.mp4')
+    out = cv2.VideoWriter(temp_video, fourcc, fps, (width, height))
     
     frame_count = 0
     
@@ -138,13 +170,9 @@ def process_video(video_path, mask_data, output_path, callback=None):
         
         processed_frame = frame
         
-        # Apply Telea inpainting first (faster)
-        if has_telea:
-            processed_frame = cv2.inpaint(processed_frame, telea_mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
-        
-        # Apply Navier-Stokes inpainting (better quality for edges)
-        if has_ns:
-            processed_frame = cv2.inpaint(processed_frame, ns_mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
+        # Apply each effect type
+        for method, mask in masks_by_method.items():
+            processed_frame = apply_effect(processed_frame, mask, method)
         
         out.write(processed_frame)
         frame_count += 1
@@ -156,24 +184,30 @@ def process_video(video_path, mask_data, output_path, callback=None):
     cap.release()
     out.release()
     
-    # Re-encode with ffmpeg for better compatibility (if available)
+    # Re-encode with ffmpeg and COPY AUDIO from original
     try:
         import subprocess
         # Check if ffmpeg is available
         result = subprocess.run(['which', 'ffmpeg'], capture_output=True, text=True)
         if result.returncode == 0:
-            # Use ffmpeg to re-encode for better compatibility
+            # Use ffmpeg to re-encode video AND copy audio from original
             subprocess.run([
-                'ffmpeg', '-y', '-i', temp_output,
+                'ffmpeg', '-y',
+                '-i', temp_video,           # Processed video (no audio)
+                '-i', str(video_path),      # Original video (has audio)
                 '-c:v', 'libx264', '-preset', 'medium',
                 '-crf', '18', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '192k',  # Encode audio as AAC
+                '-map', '0:v:0',            # Take video from first input
+                '-map', '1:a:0?',           # Take audio from second input (? = optional)
+                '-shortest',                # Match shortest stream
                 str(output_path)
             ], capture_output=True)
-            os.remove(temp_output)
+            os.remove(temp_video)
         else:
-            shutil.move(temp_output, str(output_path))
+            shutil.move(temp_video, str(output_path))
     except Exception:
-        shutil.move(temp_output, str(output_path))
+        shutil.move(temp_video, str(output_path))
     
     return True
 
