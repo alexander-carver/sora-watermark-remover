@@ -268,6 +268,11 @@
             background: #000;
             border-radius: 12px;
             overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .video-editor-wrapper.drawing-active {
+            touch-action: none;
         }
 
         .video-editor-wrapper video {
@@ -282,11 +287,16 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+            touch-action: none;
         }
 
         .drawing-canvas.draw-mode {
             pointer-events: auto;
             cursor: crosshair;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         /* Toolbar */
@@ -796,6 +806,7 @@
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
+        let lastX, lastY;  // Track last position for touch
 
         // DOM Elements
         const uploadZone = document.getElementById('upload-zone');
@@ -979,19 +990,41 @@
                 btnDrawMode.textContent = '✏️ Draw Mode: ON';
                 btnDrawMode.classList.add('active');
                 drawingCanvas.classList.add('draw-mode');
+                videoEditorWrapper.classList.add('drawing-active');
             } else {
                 btnDrawMode.textContent = '✏️ Draw Mode: OFF';
                 btnDrawMode.classList.remove('active');
                 drawingCanvas.classList.remove('draw-mode');
+                videoEditorWrapper.classList.remove('drawing-active');
             }
         }
 
-        // Resize canvas when video size changes
+        // Resize canvas when video size changes or orientation changes
         window.addEventListener('resize', () => {
             if (currentJob) {
+                setTimeout(() => {
+                    resizeCanvas();
+                    redrawCanvas();
+                }, 100);
+            }
+        });
+        
+        // Handle orientation change on mobile
+        window.addEventListener('orientationchange', () => {
+            if (currentJob) {
+                setTimeout(() => {
+                    resizeCanvas();
+                    redrawCanvas();
+                }, 300);
+            }
+        });
+        
+        // Also resize when video loads/changes size
+        videoPlayer.addEventListener('loadeddata', () => {
+            setTimeout(() => {
                 resizeCanvas();
                 redrawCanvas();
-            }
+            }, 100);
         });
 
         // Method selection
@@ -1003,45 +1036,67 @@
             });
         });
 
-        // Drawing handlers
-        drawingCanvas.addEventListener('mousedown', startDraw);
-        drawingCanvas.addEventListener('mousemove', draw);
-        drawingCanvas.addEventListener('mouseup', endDraw);
-        drawingCanvas.addEventListener('mouseleave', endDraw);
-
-        // Touch support
-        drawingCanvas.addEventListener('touchstart', (e) => {
-            if (!drawModeEnabled) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            startDraw({ clientX: touch.clientX, clientY: touch.clientY });
-        });
-
-        drawingCanvas.addEventListener('touchmove', (e) => {
-            if (!drawModeEnabled) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            draw({ clientX: touch.clientX, clientY: touch.clientY });
-        });
-
-        drawingCanvas.addEventListener('touchend', endDraw);
-
-        function startDraw(e) {
+        // Drawing handlers - Mouse
+        drawingCanvas.addEventListener('mousedown', (e) => {
             if (!drawModeEnabled || !currentJob) return;
-            
             const rect = drawingCanvas.getBoundingClientRect();
             startX = e.clientX - rect.left;
             startY = e.clientY - rect.top;
+            lastX = startX;
+            lastY = startY;
             isDrawing = true;
-        }
-
-        function draw(e) {
+        });
+        
+        drawingCanvas.addEventListener('mousemove', (e) => {
             if (!isDrawing || !drawModeEnabled) return;
-            
             const rect = drawingCanvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+            drawSelection(lastX, lastY);
+        });
+        
+        drawingCanvas.addEventListener('mouseup', finishDraw);
+        drawingCanvas.addEventListener('mouseleave', finishDraw);
+
+        // Touch support - improved for mobile
+        drawingCanvas.addEventListener('touchstart', (e) => {
+            if (!drawModeEnabled || !currentJob) return;
+            e.preventDefault();
+            e.stopPropagation();
             
+            const touch = e.touches[0];
+            const rect = drawingCanvas.getBoundingClientRect();
+            startX = touch.clientX - rect.left;
+            startY = touch.clientY - rect.top;
+            lastX = startX;
+            lastY = startY;
+            isDrawing = true;
+        }, { passive: false });
+
+        drawingCanvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing || !drawModeEnabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const touch = e.touches[0];
+            const rect = drawingCanvas.getBoundingClientRect();
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+            drawSelection(lastX, lastY);
+        }, { passive: false });
+
+        drawingCanvas.addEventListener('touchend', (e) => {
+            if (!isDrawing || !drawModeEnabled) return;
+            e.preventDefault();
+            finishDraw();
+        }, { passive: false });
+        
+        drawingCanvas.addEventListener('touchcancel', (e) => {
+            isDrawing = false;
+            redrawCanvas();
+        });
+
+        function drawSelection(currentX, currentY) {
             redrawCanvas();
             
             // Draw current selection
@@ -1058,13 +1113,12 @@
             ctx.setLineDash([]);
         }
 
-        function endDraw(e) {
+        function finishDraw() {
             if (!isDrawing || !drawModeEnabled) return;
             isDrawing = false;
             
-            const rect = drawingCanvas.getBoundingClientRect();
-            const endX = e.clientX - rect.left;
-            const endY = e.clientY - rect.top;
+            const endX = lastX;
+            const endY = lastY;
             
             const width = Math.abs(endX - startX);
             const height = Math.abs(endY - startY);
@@ -1091,6 +1145,8 @@
                 updateButtonStates();
                 
                 showToast(`Region added (${selectedMethod})`, 'success');
+            } else {
+                redrawCanvas();
             }
         }
 
