@@ -18,6 +18,8 @@
             --text-muted: #606070;
             --danger: #ff4466;
             --warning: #ffaa00;
+            --telea-color: #00aaff;
+            --ns-color: #ff66aa;
             --border: #2a2a35;
             --border-hover: #3a3a45;
         }
@@ -36,7 +38,6 @@
             overflow-x: hidden;
         }
 
-        /* Background pattern */
         body::before {
             content: '';
             position: fixed;
@@ -58,7 +59,6 @@
             padding: 20px;
         }
 
-        /* Header */
         header {
             text-align: center;
             padding: 40px 20px;
@@ -95,10 +95,9 @@
             font-family: 'Space Mono', monospace;
         }
 
-        /* Main sections */
         .main-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1.5fr;
             gap: 30px;
         }
 
@@ -143,7 +142,7 @@
         .upload-zone {
             border: 2px dashed var(--border);
             border-radius: 12px;
-            padding: 60px 40px;
+            padding: 40px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -155,24 +154,20 @@
             background: var(--accent-glow);
         }
 
-        .upload-zone.drag-over {
-            transform: scale(1.02);
-        }
-
         .upload-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
+            font-size: 3rem;
+            margin-bottom: 15px;
             opacity: 0.8;
         }
 
         .upload-text {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: 1rem;
+            margin-bottom: 8px;
         }
 
         .upload-hint {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         #file-input {
@@ -183,8 +178,8 @@
         .queue-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            max-height: 400px;
+            gap: 10px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -192,11 +187,12 @@
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 16px;
+            padding: 12px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .queue-item:hover {
@@ -213,10 +209,10 @@
         }
 
         .queue-thumb {
-            width: 80px;
-            height: 45px;
+            width: 60px;
+            height: 34px;
             background: var(--bg-primary);
-            border-radius: 6px;
+            border-radius: 4px;
             overflow: hidden;
             flex-shrink: 0;
         }
@@ -234,105 +230,218 @@
 
         .queue-name {
             font-weight: 500;
-            margin-bottom: 4px;
+            font-size: 0.85rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .queue-meta {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
         }
 
         .queue-status {
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 20px;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
             font-weight: 600;
         }
 
-        .queue-status.pending {
-            background: var(--bg-primary);
-            color: var(--text-muted);
+        .queue-status.pending { background: var(--bg-primary); color: var(--text-muted); }
+        .queue-status.ready { background: rgba(0, 150, 255, 0.2); color: #00aaff; }
+        .queue-status.processing { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+        .queue-status.completed { background: var(--accent-glow); color: var(--accent); }
+
+        .queue-delete {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 1rem;
         }
 
-        .queue-status.ready {
-            background: rgba(0, 150, 255, 0.2);
-            color: #00aaff;
+        /* Video Editor */
+        .video-editor-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
-        .queue-status.processing {
-            background: rgba(255, 170, 0, 0.2);
-            color: var(--warning);
+        .video-editor-wrapper video {
+            width: 100%;
+            display: block;
         }
 
-        .queue-status.completed {
-            background: var(--accent-glow);
-            color: var(--accent);
+        .drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            pointer-events: none;
         }
 
-        .queue-actions {
+        .drawing-canvas.active {
+            pointer-events: auto;
+        }
+
+        .video-status-bar {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            white-space: nowrap;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .status-dot.paused {
+            background: var(--accent);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .method-toggle {
             display: flex;
             gap: 8px;
         }
 
-        /* Editor Canvas */
-        .editor-container {
-            position: relative;
-            background: var(--bg-primary);
-            border-radius: 12px;
-            overflow: hidden;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .method-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .method-btn.telea {
+            background: rgba(0, 170, 255, 0.2);
+            color: var(--telea-color);
+            border-color: var(--telea-color);
+        }
+
+        .method-btn.telea.active {
+            background: var(--telea-color);
+            color: #000;
+        }
+
+        .method-btn.ns {
+            background: rgba(255, 102, 170, 0.2);
+            color: var(--ns-color);
+            border-color: var(--ns-color);
+        }
+
+        .method-btn.ns.active {
+            background: var(--ns-color);
+            color: #000;
         }
 
         .editor-placeholder {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
             color: var(--text-muted);
+            text-align: center;
         }
 
         .editor-placeholder svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 16px;
+            width: 60px;
+            height: 60px;
+            margin-bottom: 12px;
             opacity: 0.3;
         }
 
-        #editor-canvas {
-            max-width: 100%;
-            max-height: 500px;
-            cursor: crosshair;
-            display: none;
+        /* Masks List */
+        .masks-section {
+            margin-top: 16px;
         }
 
-        .editor-instructions {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 8px 16px;
+        .masks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .mask-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
             border-radius: 8px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+
+        .mask-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .mask-color.telea { background: var(--telea-color); }
+        .mask-color.ns { background: var(--ns-color); }
+
+        .mask-info {
+            flex: 1;
+        }
+
+        .mask-method {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .mask-delete {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1rem;
         }
 
         /* Controls */
         .controls {
-            margin-top: 20px;
+            margin-top: 16px;
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -347,7 +456,7 @@
             color: var(--bg-primary);
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: var(--accent-dim);
             transform: translateY(-2px);
         }
@@ -355,7 +464,6 @@
         .btn-primary:disabled {
             background: var(--text-muted);
             cursor: not-allowed;
-            transform: none;
         }
 
         .btn-secondary {
@@ -399,13 +507,12 @@
 
         .input-field {
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
+            font-size: 0.85rem;
         }
 
         .input-field:focus {
@@ -413,56 +520,15 @@
             border-color: var(--accent);
         }
 
-        .input-field::placeholder {
-            color: var(--text-muted);
-        }
-
         .input-hint {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        /* Method selector */
-        .method-selector {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        .method-option {
-            flex: 1;
-            padding: 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .method-option:hover {
-            border-color: var(--border-hover);
-        }
-
-        .method-option.active {
-            border-color: var(--accent);
-            background: var(--accent-glow);
-        }
-
-        .method-option .method-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .method-option .method-desc {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            margin-top: 4px;
         }
 
         /* Progress bar */
         .progress-container {
-            margin-top: 20px;
+            margin-top: 16px;
             display: none;
         }
 
@@ -471,24 +537,24 @@
         }
 
         .progress-bar {
-            height: 8px;
+            height: 6px;
             background: var(--bg-tertiary);
-            border-radius: 4px;
+            border-radius: 3px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--accent) 0%, #00ccff 100%);
-            border-radius: 4px;
+            border-radius: 3px;
             transition: width 0.3s ease;
             width: 0%;
         }
 
         .progress-text {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
-            margin-top: 8px;
+            margin-top: 6px;
             text-align: center;
         }
 
@@ -499,31 +565,23 @@
 
         .processed-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .processed-item {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 16px;
+            padding: 14px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .processed-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--accent-glow);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent);
-            font-size: 1.2rem;
+            font-size: 1.5rem;
         }
 
         .processed-info {
@@ -533,54 +591,15 @@
 
         .processed-name {
             font-weight: 500;
+            font-size: 0.85rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .processed-size {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
-        }
-
-        /* Mobile styles */
-        @media (max-width: 600px) {
-            .container {
-                padding: 12px;
-            }
-
-            header {
-                padding: 24px 12px;
-            }
-
-            .logo {
-                font-size: 1.8rem;
-            }
-
-            .section {
-                padding: 16px;
-            }
-
-            .upload-zone {
-                padding: 40px 20px;
-            }
-
-            .upload-icon {
-                font-size: 3rem;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .method-selector {
-                flex-direction: column;
-            }
         }
 
         /* Toast notifications */
@@ -598,110 +617,44 @@
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 16px 20px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
             animation: slideIn 0.3s ease;
-            max-width: 350px;
+            max-width: 320px;
+            font-size: 0.85rem;
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success { border-color: var(--accent); }
+        .toast.error { border-color: var(--danger); }
+
+        /* Mobile styles */
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            header { padding: 24px 12px; }
+            .logo { font-size: 1.6rem; }
+            .section { padding: 16px; }
+            .controls { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+            .video-status-bar { 
+                flex-direction: column; 
+                gap: 8px;
+                bottom: 60px;
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .toast.success {
-            border-color: var(--accent);
-        }
-
-        .toast.error {
-            border-color: var(--danger);
-        }
-
-        /* Mask boxes overlay */
-        .mask-box {
-            position: absolute;
-            border: 2px solid var(--accent);
-            background: rgba(0, 255, 136, 0.2);
-            pointer-events: none;
-        }
-
-        .mask-box .delete-mask {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 20px;
-            height: 20px;
-            background: var(--danger);
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            pointer-events: auto;
-        }
-
-        /* Video Player */
-        .video-player-container {
-            background: var(--bg-primary);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .video-player-container video {
-            width: 100%;
-            max-height: 350px;
-            display: block;
-            background: #000;
-        }
-
-        .video-controls {
-            padding: 12px 16px;
-            background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .video-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .video-time {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--accent);
         }
 
         /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-tertiary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--border-hover);
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-tertiary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
     </style>
 </head>
 <body>
@@ -725,12 +678,28 @@
                     <input type="file" id="file-input" accept="video/*" multiple>
                 </div>
 
-                <div class="section" style="margin-top: 20px;">
+                <div class="section" style="margin-top: 16px;">
                     <div class="section-title">VIDEO QUEUE</div>
                     <div class="queue-list" id="queue-list">
-                        <div class="editor-placeholder">
+                        <div class="editor-placeholder" style="min-height: 100px;">
                             <p>No videos uploaded yet</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Masks List -->
+                <div class="section masks-section" style="margin-top: 16px;" id="masks-section">
+                    <div class="section-title">WATERMARK REGIONS</div>
+                    <div class="masks-list" id="masks-list">
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">No regions selected yet</p>
+                    </div>
+                    <div class="controls">
+                        <button class="btn btn-secondary btn-small" id="btn-clear-masks" disabled>
+                            🗑️ Clear All
+                        </button>
+                        <button class="btn btn-secondary btn-small" id="btn-apply-to-all" disabled>
+                            📋 Copy to All Videos
+                        </button>
                     </div>
                 </div>
             </div>
@@ -738,68 +707,46 @@
             <!-- Right Column: Editor -->
             <div class="right-column">
                 <div class="section">
-                    <div class="section-title">WATERMARK EDITOR</div>
-                    <!-- Video Player -->
-                    <div class="video-player-container" id="video-player-container" style="display: none;">
-                        <video id="video-player" controls>
+                    <div class="section-title">VIDEO EDITOR</div>
+                    
+                    <div class="video-editor-wrapper" id="video-editor-wrapper" style="display: none;">
+                        <video id="video-player" controls playsinline>
                             <source id="video-source" src="" type="video/mp4">
                         </video>
-                        <div class="video-controls">
-                            <button class="btn btn-secondary btn-small" id="btn-capture-frame">
-                                📸 Capture This Frame
-                            </button>
-                            <span class="video-hint">Play video to find watermark, then capture frame to mark it</span>
+                        <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
+                        <div class="video-status-bar" id="video-status-bar">
+                            <div class="status-indicator">
+                                <div class="status-dot" id="status-dot"></div>
+                                <span id="status-text">Playing</span>
+                            </div>
+                            <div class="method-toggle">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Method:</span>
+                                <button class="method-btn telea active" data-method="telea">Telea</button>
+                                <button class="method-btn ns" data-method="ns">Navier-Stokes</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="editor-container" id="editor-container">
-                        <div class="editor-placeholder" id="editor-placeholder">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
-                            </svg>
-                            <p>Select a video to start editing</p>
-                        </div>
-                        <canvas id="editor-canvas"></canvas>
-                        <div class="editor-instructions" id="editor-instructions" style="display: none;">
-                            Click and drag to select watermark area
-                        </div>
-                    </div>
-
-                    <div class="controls">
-                        <button class="btn btn-secondary" id="btn-clear-masks" disabled>
-                            🗑️ Clear Selections
-                        </button>
-                        <button class="btn btn-secondary" id="btn-apply-to-all" disabled>
-                            📋 Apply to All
-                        </button>
+                    <div class="editor-placeholder" id="editor-placeholder">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
+                        </svg>
+                        <p>Select a video to start editing</p>
+                        <p style="font-size: 0.8rem; margin-top: 8px;">Pause the video and draw rectangles on watermarks</p>
                     </div>
 
                     <div class="input-group">
                         <label class="input-label">Output Filename (leave blank for random)</label>
-                        <input type="text" class="input-field" id="output-name" placeholder="e.g., beach_sunset_clip or leave empty for random">
+                        <input type="text" class="input-field" id="output-name" placeholder="e.g., beach_sunset_clip">
                         <div class="input-hint">Random names help avoid AI detection on social platforms</div>
                     </div>
 
-                    <div class="input-group">
-                        <label class="input-label">Inpainting Method</label>
-                        <div class="method-selector">
-                            <div class="method-option active" data-method="telea">
-                                <div class="method-name">Telea</div>
-                                <div class="method-desc">Fast, good for solid areas</div>
-                            </div>
-                            <div class="method-option" data-method="ns">
-                                <div class="method-name">Navier-Stokes</div>
-                                <div class="method-desc">Better edges, slower</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="controls" style="margin-top: 24px;">
+                    <div class="controls" style="margin-top: 20px;">
                         <button class="btn btn-primary" id="btn-process" disabled>
-                            ✨ Remove Watermark
+                            ✨ Remove Watermarks
                         </button>
                         <button class="btn btn-primary" id="btn-process-all" disabled>
-                            🚀 Process All
+                            🚀 Process All Videos
                         </button>
                     </div>
 
@@ -817,11 +764,8 @@
         <div class="section processed-section" id="processed-section" style="display: none;">
             <div class="section-title">PROCESSED VIDEOS</div>
             <div class="processed-grid" id="processed-grid"></div>
-            <div class="controls" style="margin-top: 20px;">
-                <button class="btn btn-secondary" id="btn-open-folder">
-                    📂 Open Output Folder
-                </button>
-                <button class="btn btn-danger" id="btn-cleanup">
+            <div class="controls" style="margin-top: 16px;">
+                <button class="btn btn-danger btn-small" id="btn-cleanup">
                     🗑️ Clean Up Temp Files
                 </button>
             </div>
@@ -834,22 +778,25 @@
         // State
         let queue = [];
         let currentJob = null;
-        let masks = [];
-        let globalMasks = [];
+        let masks = [];  // Current video's masks
+        let globalMasks = [];  // Masks to apply to all
         let selectedMethod = 'telea';
         let isDrawing = false;
         let startX, startY;
-        let canvas, ctx;
-        let originalImage = null;
+        let isPaused = false;
 
         // DOM Elements
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
         const queueList = document.getElementById('queue-list');
-        const editorCanvas = document.getElementById('editor-canvas');
+        const videoEditorWrapper = document.getElementById('video-editor-wrapper');
+        const videoPlayer = document.getElementById('video-player');
+        const videoSource = document.getElementById('video-source');
+        const drawingCanvas = document.getElementById('drawing-canvas');
         const editorPlaceholder = document.getElementById('editor-placeholder');
-        const editorInstructions = document.getElementById('editor-instructions');
-        const editorContainer = document.getElementById('editor-container');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const masksList = document.getElementById('masks-list');
         const btnClearMasks = document.getElementById('btn-clear-masks');
         const btnApplyToAll = document.getElementById('btn-apply-to-all');
         const btnProcess = document.getElementById('btn-process');
@@ -860,14 +807,8 @@
         const progressText = document.getElementById('progress-text');
         const processedSection = document.getElementById('processed-section');
         const processedGrid = document.getElementById('processed-grid');
-        const videoPlayerContainer = document.getElementById('video-player-container');
-        const videoPlayer = document.getElementById('video-player');
-        const videoSource = document.getElementById('video-source');
-        const btnCaptureFrame = document.getElementById('btn-capture-frame');
 
-        // Initialize canvas
-        canvas = editorCanvas;
-        ctx = canvas.getContext('2d');
+        const ctx = drawingCanvas.getContext('2d');
 
         // Upload handlers
         uploadZone.addEventListener('click', () => fileInput.click());
@@ -925,9 +866,8 @@
                         masks: []
                     });
                     updateQueueUI();
-                    showToast(`${file.name} uploaded successfully`, 'success');
+                    showToast(`${file.name} uploaded`, 'success');
                     
-                    // Auto-select first video
                     if (queue.length === 1) {
                         selectVideo(data.job_id);
                     }
@@ -941,28 +881,26 @@
 
         function updateQueueUI() {
             if (queue.length === 0) {
-                queueList.innerHTML = '<div class="editor-placeholder"><p>No videos uploaded yet</p></div>';
+                queueList.innerHTML = '<div class="editor-placeholder" style="min-height: 100px;"><p>No videos uploaded yet</p></div>';
                 return;
             }
 
             queueList.innerHTML = queue.map(item => `
                 <div class="queue-item ${currentJob?.id === item.id ? 'active' : ''} ${item.status === 'completed' ? 'completed' : ''}" 
-                     data-id="${item.id}" onclick="selectVideo('${item.id}')">
+                     onclick="selectVideo('${item.id}')">
                     <div class="queue-thumb">
                         <img src="${item.previewUrl}" alt="Preview">
                     </div>
                     <div class="queue-info">
                         <div class="queue-name">${item.name}</div>
-                        <div class="queue-meta">${item.info.width}x${item.info.height} • ${formatDuration(item.info.duration)}</div>
+                        <div class="queue-meta">${item.info.width}x${item.info.height} • ${formatDuration(item.info.duration)} • ${item.masks.length} regions</div>
                     </div>
                     <span class="queue-status ${item.status}">${getStatusLabel(item.status)}</span>
-                    <div class="queue-actions">
-                        <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); removeFromQueue('${item.id}')">✕</button>
-                    </div>
+                    <button class="queue-delete" onclick="event.stopPropagation(); removeFromQueue('${item.id}')">✕</button>
                 </div>
             `).join('');
 
-            btnProcessAll.disabled = queue.filter(q => q.masks.length > 0 || globalMasks.length > 0).length === 0;
+            updateButtonStates();
         }
 
         function formatDuration(seconds) {
@@ -988,201 +926,111 @@
             currentJob = item;
             masks = [...item.masks];
             
-            // Show video player
-            videoPlayerContainer.style.display = 'block';
+            // Show video editor
+            videoEditorWrapper.style.display = 'block';
+            editorPlaceholder.style.display = 'none';
+            
             videoSource.src = `/video/${id}`;
             videoPlayer.load();
             
-            // Load preview image
-            const img = new Image();
-            img.onload = () => {
-                originalImage = img;
-                
-                // Size canvas
-                const maxWidth = editorContainer.clientWidth - 40;
-                const maxHeight = 400;
-                let width = img.width;
-                let height = img.height;
-                
-                if (width > maxWidth) {
-                    height = (maxWidth / width) * height;
-                    width = maxWidth;
-                }
-                if (height > maxHeight) {
-                    width = (maxHeight / height) * width;
-                    height = maxHeight;
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                canvas.style.display = 'block';
-                editorPlaceholder.style.display = 'none';
-                editorInstructions.style.display = 'block';
-                
+            // Wait for video metadata
+            videoPlayer.onloadedmetadata = () => {
+                resizeCanvas();
                 redrawCanvas();
             };
-            img.src = item.previewUrl;
 
             updateQueueUI();
+            updateMasksList();
             updateButtonStates();
         }
-        
-        // Capture frame from video
-        btnCaptureFrame.addEventListener('click', () => {
-            if (!currentJob || !videoPlayer.videoWidth) return;
-            
-            // Create temp canvas to capture frame
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = videoPlayer.videoWidth;
-            tempCanvas.height = videoPlayer.videoHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(videoPlayer, 0, 0);
-            
-            // Convert to image
-            const img = new Image();
-            img.onload = () => {
-                originalImage = img;
-                
-                // Size canvas
-                const maxWidth = editorContainer.clientWidth - 40;
-                const maxHeight = 400;
-                let width = img.width;
-                let height = img.height;
-                
-                if (width > maxWidth) {
-                    height = (maxWidth / width) * height;
-                    width = maxWidth;
-                }
-                if (height > maxHeight) {
-                    width = (maxHeight / height) * width;
-                    height = maxHeight;
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                canvas.style.display = 'block';
-                editorPlaceholder.style.display = 'none';
-                editorInstructions.style.display = 'block';
-                
-                redrawCanvas();
-                showToast('Frame captured! Now draw on the watermark.', 'success');
-            };
-            img.src = tempCanvas.toDataURL('image/jpeg');
-        });
 
-        function redrawCanvas() {
-            if (!originalImage) return;
-            
-            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
-            
-            // Draw all masks
-            const allMasks = [...masks, ...globalMasks];
-            allMasks.forEach((mask, index) => {
-                const x = mask.x * canvas.width;
-                const y = mask.y * canvas.height;
-                const w = mask.width * canvas.width;
-                const h = mask.height * canvas.height;
-                
-                ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
-                ctx.fillRect(x, y, w, h);
-                
-                ctx.strokeStyle = '#00ff88';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, w, h);
-                
-                // Delete button
-                ctx.fillStyle = '#ff4466';
-                ctx.beginPath();
-                ctx.arc(x + w, y, 10, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = 'white';
-                ctx.font = '12px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('×', x + w, y);
-            });
+        function resizeCanvas() {
+            const rect = videoPlayer.getBoundingClientRect();
+            drawingCanvas.width = rect.width;
+            drawingCanvas.height = rect.height;
         }
 
-        // Canvas drawing handlers
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', endDraw);
-        canvas.addEventListener('mouseleave', endDraw);
-        
+        // Video play/pause handling
+        videoPlayer.addEventListener('play', () => {
+            isPaused = false;
+            statusDot.classList.remove('paused');
+            statusText.textContent = 'Playing - pause to draw';
+            drawingCanvas.classList.remove('active');
+        });
+
+        videoPlayer.addEventListener('pause', () => {
+            isPaused = true;
+            statusDot.classList.add('paused');
+            statusText.textContent = 'Paused - draw on watermarks';
+            drawingCanvas.classList.add('active');
+            resizeCanvas();
+            redrawCanvas();
+        });
+
+        // Resize canvas when video size changes
+        window.addEventListener('resize', () => {
+            if (currentJob) {
+                resizeCanvas();
+                redrawCanvas();
+            }
+        });
+
+        // Method selection
+        document.querySelectorAll('.method-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedMethod = btn.dataset.method;
+            });
+        });
+
+        // Drawing handlers
+        drawingCanvas.addEventListener('mousedown', startDraw);
+        drawingCanvas.addEventListener('mousemove', draw);
+        drawingCanvas.addEventListener('mouseup', endDraw);
+        drawingCanvas.addEventListener('mouseleave', endDraw);
+
         // Touch support
-        canvas.addEventListener('touchstart', (e) => {
+        drawingCanvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
             startDraw({ clientX: touch.clientX, clientY: touch.clientY });
         });
-        
-        canvas.addEventListener('touchmove', (e) => {
+
+        drawingCanvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
             draw({ clientX: touch.clientX, clientY: touch.clientY });
         });
-        
-        canvas.addEventListener('touchend', endDraw);
 
-        canvas.addEventListener('click', (e) => {
-            if (!originalImage) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            // Check if clicked on delete button
-            const allMasks = [...masks, ...globalMasks];
-            for (let i = allMasks.length - 1; i >= 0; i--) {
-                const mask = allMasks[i];
-                const deleteX = (mask.x + mask.width) * canvas.width;
-                const deleteY = mask.y * canvas.height;
-                
-                const dist = Math.sqrt(Math.pow(x - deleteX, 2) + Math.pow(y - deleteY, 2));
-                if (dist < 15) {
-                    // Remove mask
-                    const maskIndex = masks.indexOf(mask);
-                    if (maskIndex >= 0) {
-                        masks.splice(maskIndex, 1);
-                        currentJob.masks = [...masks];
-                    } else {
-                        const globalIndex = globalMasks.indexOf(mask);
-                        if (globalIndex >= 0) {
-                            globalMasks.splice(globalIndex, 1);
-                        }
-                    }
-                    redrawCanvas();
-                    updateButtonStates();
-                    return;
-                }
-            }
-        });
+        drawingCanvas.addEventListener('touchend', endDraw);
 
         function startDraw(e) {
-            if (!originalImage) return;
+            if (!isPaused || !currentJob) return;
             
-            const rect = canvas.getBoundingClientRect();
+            const rect = drawingCanvas.getBoundingClientRect();
             startX = e.clientX - rect.left;
             startY = e.clientY - rect.top;
             isDrawing = true;
         }
 
         function draw(e) {
-            if (!isDrawing || !originalImage) return;
+            if (!isDrawing) return;
             
-            const rect = canvas.getBoundingClientRect();
+            const rect = drawingCanvas.getBoundingClientRect();
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
             
             redrawCanvas();
             
             // Draw current selection
-            ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+            const color = selectedMethod === 'telea' ? 'rgba(0, 170, 255, 0.3)' : 'rgba(255, 102, 170, 0.3)';
+            const stroke = selectedMethod === 'telea' ? '#00aaff' : '#ff66aa';
+            
+            ctx.fillStyle = color;
             ctx.fillRect(startX, startY, currentX - startX, currentY - startY);
             
-            ctx.strokeStyle = '#00ff88';
+            ctx.strokeStyle = stroke;
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
@@ -1190,23 +1038,23 @@
         }
 
         function endDraw(e) {
-            if (!isDrawing || !originalImage) return;
+            if (!isDrawing) return;
             isDrawing = false;
             
-            const rect = canvas.getBoundingClientRect();
+            const rect = drawingCanvas.getBoundingClientRect();
             const endX = e.clientX - rect.left;
             const endY = e.clientY - rect.top;
             
-            // Only add if reasonable size
             const width = Math.abs(endX - startX);
             const height = Math.abs(endY - startY);
             
             if (width > 10 && height > 10) {
                 const mask = {
-                    x: Math.min(startX, endX) / canvas.width,
-                    y: Math.min(startY, endY) / canvas.height,
-                    width: width / canvas.width,
-                    height: height / canvas.height
+                    x: Math.min(startX, endX) / drawingCanvas.width,
+                    y: Math.min(startY, endY) / drawingCanvas.height,
+                    width: width / drawingCanvas.width,
+                    height: height / drawingCanvas.height,
+                    method: selectedMethod
                 };
                 
                 masks.push(mask);
@@ -1215,8 +1063,83 @@
                 
                 redrawCanvas();
                 updateQueueUI();
+                updateMasksList();
                 updateButtonStates();
+                
+                showToast(`Region added (${selectedMethod})`, 'success');
             }
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            
+            // Draw all masks for current video
+            const allMasks = [...masks, ...globalMasks];
+            allMasks.forEach((mask, index) => {
+                const x = mask.x * drawingCanvas.width;
+                const y = mask.y * drawingCanvas.height;
+                const w = mask.width * drawingCanvas.width;
+                const h = mask.height * drawingCanvas.height;
+                
+                const isTelea = mask.method === 'telea';
+                ctx.fillStyle = isTelea ? 'rgba(0, 170, 255, 0.3)' : 'rgba(255, 102, 170, 0.3)';
+                ctx.fillRect(x, y, w, h);
+                
+                ctx.strokeStyle = isTelea ? '#00aaff' : '#ff66aa';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, w, h);
+                
+                // Label
+                ctx.fillStyle = isTelea ? '#00aaff' : '#ff66aa';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText(isTelea ? 'T' : 'NS', x + 4, y + 14);
+            });
+        }
+
+        function updateMasksList() {
+            const allMasks = [...masks, ...globalMasks];
+            
+            if (allMasks.length === 0) {
+                masksList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">No regions selected yet</p>';
+                return;
+            }
+
+            masksList.innerHTML = allMasks.map((mask, index) => `
+                <div class="mask-item">
+                    <div class="mask-color ${mask.method}"></div>
+                    <div class="mask-info">
+                        <span>Region ${index + 1}</span>
+                        <span class="mask-method">${mask.method === 'telea' ? 'Telea (fast)' : 'Navier-Stokes (quality)'}</span>
+                    </div>
+                    <button class="mask-delete" onclick="deleteMask(${index})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteMask(index) {
+            const allMasks = [...masks, ...globalMasks];
+            const mask = allMasks[index];
+            
+            const localIndex = masks.indexOf(mask);
+            if (localIndex >= 0) {
+                masks.splice(localIndex, 1);
+                if (currentJob) {
+                    currentJob.masks = [...masks];
+                    if (masks.length === 0 && globalMasks.length === 0) {
+                        currentJob.status = 'pending';
+                    }
+                }
+            } else {
+                const globalIndex = globalMasks.indexOf(mask);
+                if (globalIndex >= 0) {
+                    globalMasks.splice(globalIndex, 1);
+                }
+            }
+            
+            redrawCanvas();
+            updateQueueUI();
+            updateMasksList();
+            updateButtonStates();
         }
 
         function updateButtonStates() {
@@ -1224,17 +1147,10 @@
             btnClearMasks.disabled = !hasMasks;
             btnApplyToAll.disabled = masks.length === 0;
             btnProcess.disabled = !currentJob || !hasMasks;
-            btnProcessAll.disabled = queue.filter(q => q.masks.length > 0 || globalMasks.length > 0).length === 0;
+            
+            const readyCount = queue.filter(q => q.masks.length > 0 || globalMasks.length > 0).length;
+            btnProcessAll.disabled = readyCount === 0;
         }
-
-        // Method selector
-        document.querySelectorAll('.method-option').forEach(el => {
-            el.addEventListener('click', () => {
-                document.querySelectorAll('.method-option').forEach(e => e.classList.remove('active'));
-                el.classList.add('active');
-                selectedMethod = el.dataset.method;
-            });
-        });
 
         // Clear masks
         btnClearMasks.addEventListener('click', () => {
@@ -1245,6 +1161,7 @@
             }
             redrawCanvas();
             updateQueueUI();
+            updateMasksList();
             updateButtonStates();
         });
 
@@ -1252,13 +1169,14 @@
         btnApplyToAll.addEventListener('click', () => {
             globalMasks = [...masks];
             queue.forEach(item => {
-                if (item.masks.length === 0) {
+                if (item.masks.length === 0 && item.status !== 'completed') {
                     item.status = 'ready';
                 }
             });
             updateQueueUI();
+            updateMasksList();
             updateButtonStates();
-            showToast('Masks applied to all videos', 'success');
+            showToast(`Regions copied to all ${queue.length} videos`, 'success');
         });
 
         // Process single video
@@ -1295,22 +1213,23 @@
                     body: JSON.stringify({
                         job_id: job.id,
                         masks: allMasks,
-                        custom_name: outputNameInput.value,
-                        method: selectedMethod
+                        custom_name: outputNameInput.value
                     })
                 });
 
                 // Poll for progress
                 const pollProgress = setInterval(async () => {
-                    const progressRes = await fetch(`/progress/${job.id}`);
-                    const progressData = await progressRes.json();
-                    
-                    progressFill.style.width = `${progressData.progress}%`;
-                    progressText.textContent = `Processing ${job.name}... ${Math.round(progressData.progress)}%`;
-                    
-                    if (progressData.status === 'completed' || progressData.status === 'error') {
-                        clearInterval(pollProgress);
-                    }
+                    try {
+                        const progressRes = await fetch(`/progress/${job.id}`);
+                        const progressData = await progressRes.json();
+                        
+                        progressFill.style.width = `${progressData.progress}%`;
+                        progressText.textContent = `Processing ${job.name}... ${Math.round(progressData.progress)}%`;
+                        
+                        if (progressData.status === 'completed' || progressData.status === 'error') {
+                            clearInterval(pollProgress);
+                        }
+                    } catch (e) {}
                 }, 500);
 
                 const data = await response.json();
@@ -1320,7 +1239,7 @@
                     job.downloadUrl = data.download_url;
                     job.outputName = data.filename;
                     
-                    showToast(`${job.name} processed successfully!`, 'success');
+                    showToast(`${job.name} processed!`, 'success');
                     updateProcessedFiles();
                 } else {
                     job.status = 'ready';
@@ -1349,7 +1268,7 @@
                             <div class="processed-name">${file.name}</div>
                             <div class="processed-size">${formatFileSize(file.size)}</div>
                         </div>
-                        <a href="/processed/${file.name}" download class="btn btn-primary btn-small">Download</a>
+                        <a href="/processed/${file.name}" download class="btn btn-primary btn-small">↓</a>
                     </div>
                 `).join('');
             }
@@ -1371,14 +1290,13 @@
                 if (currentJob?.id === id) {
                     currentJob = null;
                     masks = [];
-                    canvas.style.display = 'none';
+                    videoEditorWrapper.style.display = 'none';
                     editorPlaceholder.style.display = 'flex';
-                    editorInstructions.style.display = 'none';
-                    videoPlayerContainer.style.display = 'none';
                     videoPlayer.pause();
                 }
                 
                 updateQueueUI();
+                updateMasksList();
                 updateButtonStates();
             }
         }
@@ -1411,4 +1329,3 @@
     </script>
 </body>
 </html>
-

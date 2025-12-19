@@ -83,8 +83,9 @@ def apply_inpainting(frame, mask, method='telea'):
         return cv2.inpaint(frame, mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
 
 
-def process_video(video_path, mask_data, output_path, method='telea', callback=None):
-    """Process entire video with inpainting to remove watermark."""
+def process_video(video_path, mask_data, output_path, callback=None):
+    """Process entire video with inpainting to remove watermarks.
+    Each mask can have its own method (telea or ns)."""
     cap = cv2.VideoCapture(str(video_path))
     
     if not cap.isOpened():
@@ -96,8 +97,9 @@ def process_video(video_path, mask_data, output_path, method='telea', callback=N
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
-    # Create mask from mask_data (list of rectangles)
-    mask = np.zeros((height, width), dtype=np.uint8)
+    # Create separate masks for each method
+    telea_mask = np.zeros((height, width), dtype=np.uint8)
+    ns_mask = np.zeros((height, width), dtype=np.uint8)
     
     for rect in mask_data:
         x1 = int(rect['x'] * width)
@@ -112,7 +114,15 @@ def process_video(video_path, mask_data, output_path, method='telea', callback=N
         x2 = min(width, x2 + padding)
         y2 = min(height, y2 + padding)
         
-        cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+        # Add to appropriate mask based on method
+        method = rect.get('method', 'telea')
+        if method == 'ns':
+            cv2.rectangle(ns_mask, (x1, y1), (x2, y2), 255, -1)
+        else:
+            cv2.rectangle(telea_mask, (x1, y1), (x2, y2), 255, -1)
+    
+    has_telea = np.any(telea_mask)
+    has_ns = np.any(ns_mask)
     
     # Setup video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -126,11 +136,15 @@ def process_video(video_path, mask_data, output_path, method='telea', callback=N
         if not ret:
             break
         
-        # Apply inpainting
-        if np.any(mask):
-            processed_frame = apply_inpainting(frame, mask, method)
-        else:
-            processed_frame = frame
+        processed_frame = frame
+        
+        # Apply Telea inpainting first (faster)
+        if has_telea:
+            processed_frame = cv2.inpaint(processed_frame, telea_mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
+        
+        # Apply Navier-Stokes inpainting (better quality for edges)
+        if has_ns:
+            processed_frame = cv2.inpaint(processed_frame, ns_mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
         
         out.write(processed_frame)
         frame_count += 1
@@ -257,7 +271,6 @@ def process():
     job_id = data.get('job_id')
     mask_data = data.get('masks', [])
     custom_name = data.get('custom_name', '')
-    method = data.get('method', 'telea')
     
     if job_id not in jobs:
         return jsonify({'error': 'Job not found'}), 404
@@ -288,7 +301,6 @@ def process():
             job['upload_path'],
             mask_data,
             output_path,
-            method=method,
             callback=update_progress
         )
         job['status'] = 'completed'
