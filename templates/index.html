@@ -288,14 +288,15 @@
         }
 
         .drawing-canvas.draw-mode {
-            pointer-events: auto;
+            pointer-events: auto !important;
             cursor: crosshair;
             touch-action: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
             user-select: none;
-            z-index: 100;
-            background: rgba(0, 255, 136, 0.05);
+            z-index: 9999;
+            background: rgba(0, 255, 136, 0.08);
         }
         
         /* Visual indicator for draw mode on mobile */
@@ -750,7 +751,7 @@
                     <div class="section-title">VIDEO EDITOR</div>
                     
                     <div class="video-editor-wrapper" id="video-editor-wrapper" style="display: none;">
-                        <video id="video-player" controls playsinline>
+                        <video id="video-player" controls playsinline webkit-playsinline x-webkit-airplay="allow">
                             <source id="video-source" src="" type="video/mp4">
                         </video>
                         <canvas id="drawing-canvas" class="drawing-canvas"></canvas>
@@ -1023,13 +1024,16 @@
                 btnDrawMode.classList.add('active');
                 drawingCanvas.classList.add('draw-mode');
                 indicator.classList.add('visible');
-                // Pause video when entering draw mode
+                // Pause video and HIDE controls when entering draw mode (critical for iOS Safari)
                 videoPlayer.pause();
+                videoPlayer.removeAttribute('controls');
             } else {
                 btnDrawMode.textContent = '✏️ Draw Mode: OFF';
                 btnDrawMode.classList.remove('active');
                 drawingCanvas.classList.remove('draw-mode');
                 indicator.classList.remove('visible');
+                // Restore controls when exiting draw mode
+                videoPlayer.setAttribute('controls', '');
             }
         }
 
