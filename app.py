@@ -75,74 +75,151 @@ def extract_preview_frame(video_path, frame_number=0):
     return None
 
 
-def apply_effect(frame, mask, method='box-30'):
-    """Apply box blur effect with different kernel sizes."""
+def apply_effect(frame, mask, method='pixel-8'):
+    """Apply redaction effect to hide watermark."""
     frame_copy = frame.copy()
     
-    # 1. BOX 5x5 - Very subtle
-    if method == 'box-5':
-        blurred = cv2.blur(frame, (5, 5))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # Get bounding box of mask region
+    coords = np.where(mask > 0)
+    if len(coords[0]) == 0:
+        return frame_copy
+    y1, y2 = coords[0].min(), coords[0].max()
+    x1, x2 = coords[1].min(), coords[1].max()
+    h, w = y2 - y1, x2 - x1
+    if h <= 0 or w <= 0:
         return frame_copy
     
-    # 2. BOX 10x10 - Light
-    elif method == 'box-10':
-        blurred = cv2.blur(frame, (10, 10))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # ========== OPAQUE FILLS (Most Secure) ==========
+    
+    # 1. BLACK - Solid black fill
+    if method == 'black':
+        frame_copy[mask > 0] = [0, 0, 0]
         return frame_copy
     
-    # 3. BOX 20x20 - Mild
-    elif method == 'box-20':
-        blurred = cv2.blur(frame, (20, 20))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 2. WHITE - Solid white fill
+    elif method == 'white':
+        frame_copy[mask > 0] = [255, 255, 255]
         return frame_copy
     
-    # 4. BOX 30x30 - Medium (default)
-    elif method == 'box-30':
-        blurred = cv2.blur(frame, (30, 30))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 3. GRAY - Solid gray fill
+    elif method == 'gray':
+        frame_copy[mask > 0] = [128, 128, 128]
         return frame_copy
     
-    # 5. BOX 50x50 - Strong
-    elif method == 'box-50':
-        blurred = cv2.blur(frame, (50, 50))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 4. COLOR SAMPLE - Sample edge color and fill
+    elif method == 'color-fill':
+        border = 5
+        samples = []
+        if y1 > border:
+            top = frame[y1-border:y1, x1:x2]
+            if top.size > 0:
+                samples.append(np.mean(top, axis=(0,1)))
+        if x1 > border:
+            left = frame[y1:y2, x1-border:x1]
+            if left.size > 0:
+                samples.append(np.mean(left, axis=(0,1)))
+        if samples:
+            avg_color = np.mean(samples, axis=0).astype(np.uint8)
+            frame_copy[mask > 0] = avg_color
+        else:
+            frame_copy[mask > 0] = [128, 128, 128]
         return frame_copy
     
-    # 6. BOX 75x75 - Heavy
-    elif method == 'box-75':
-        blurred = cv2.blur(frame, (75, 75))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 5. NOISE - Solid color + random noise (harder to reverse)
+    elif method == 'noise':
+        noise = np.random.randint(60, 180, (h, w, 3), dtype=np.uint8)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = noise[roi_mask > 0]
         return frame_copy
     
-    # 7. BOX 100x100 - Very heavy
-    elif method == 'box-100':
-        blurred = cv2.blur(frame, (100, 100))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # ========== PIXELATION / MOSAIC (Very Strong) ==========
+    
+    # 6. PIXEL 4 - Fine mosaic
+    elif method == 'pixel-4':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 4
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
         return frame_copy
     
-    # 8. BOX 150x150 - Extreme
-    elif method == 'box-150':
-        blurred = cv2.blur(frame, (150, 150))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 7. PIXEL 8 - Medium mosaic (default)
+    elif method == 'pixel-8':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 8
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
         return frame_copy
     
-    # 9. BOX 200x200 - Maximum
-    elif method == 'box-200':
-        blurred = cv2.blur(frame, (200, 200))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 8. PIXEL 16 - Chunky mosaic
+    elif method == 'pixel-16':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 16
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
         return frame_copy
     
-    # 10. BOX 250x250 - Ultra
-    elif method == 'box-250':
-        blurred = cv2.blur(frame, (250, 250))
-        frame_copy[mask > 0] = blurred[mask > 0]
+    # 9. PIXEL 24 - Very chunky mosaic
+    elif method == 'pixel-24':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 24
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
         return frame_copy
     
-    # Default - box 30
+    # ========== PIXELATION + BLUR (Looks Nicer) ==========
+    
+    # 10. PIXEL + BLUR LIGHT - Mosaic then light blur
+    elif method == 'pixel-blur-light':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 10
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        # Light blur to soften edges
+        smoothed = cv2.blur(pixelated, (5, 5))
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = smoothed[roi_mask > 0]
+        return frame_copy
+    
+    # 11. PIXEL + BLUR MEDIUM - Mosaic then medium blur
+    elif method == 'pixel-blur-medium':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 12
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        # Medium blur
+        smoothed = cv2.blur(pixelated, (11, 11))
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = smoothed[roi_mask > 0]
+        return frame_copy
+    
+    # 12. PIXEL + BLUR HEAVY - Mosaic then heavy blur (smoothest)
+    elif method == 'pixel-blur-heavy':
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 16
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        # Heavy blur
+        smoothed = cv2.blur(pixelated, (21, 21))
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = smoothed[roi_mask > 0]
+        return frame_copy
+    
+    # Default - pixel 8
     else:
-        blurred = cv2.blur(frame, (30, 30))
-        frame_copy[mask > 0] = blurred[mask > 0]
+        roi = frame[y1:y2, x1:x2]
+        pixel_size = 8
+        small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
+        pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
+        roi_mask = mask[y1:y2, x1:x2]
+        frame_copy[y1:y2, x1:x2][roi_mask > 0] = pixelated[roi_mask > 0]
         return frame_copy
 
 

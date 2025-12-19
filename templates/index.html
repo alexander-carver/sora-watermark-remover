@@ -771,18 +771,26 @@
                         <div class="toolbar-divider"></div>
                         
                         <div class="toolbar-group effect-buttons">
-                            <span class="toolbar-label">Box Blur:</span>
+                            <span class="toolbar-label">Redaction:</span>
                             <select id="effect-select" class="effect-dropdown">
-                                <option value="box-5">5×5 (Subtle)</option>
-                                <option value="box-10">10×10 (Light)</option>
-                                <option value="box-20">20×20 (Mild)</option>
-                                <option value="box-30" selected>30×30 (Medium)</option>
-                                <option value="box-50">50×50 (Strong)</option>
-                                <option value="box-75">75×75 (Heavy)</option>
-                                <option value="box-100">100×100 (Very Heavy)</option>
-                                <option value="box-150">150×150 (Extreme)</option>
-                                <option value="box-200">200×200 (Maximum)</option>
-                                <option value="box-250">250×250 (Ultra)</option>
+                                <optgroup label="── OPAQUE FILL (Most Secure) ──">
+                                    <option value="black">Black</option>
+                                    <option value="white">White</option>
+                                    <option value="gray">Gray</option>
+                                    <option value="color-fill">Color Match</option>
+                                    <option value="noise">Noise (Unreversible)</option>
+                                </optgroup>
+                                <optgroup label="── PIXELATION / MOSAIC ──">
+                                    <option value="pixel-4">Pixel 4px (Fine)</option>
+                                    <option value="pixel-8" selected>Pixel 8px (Medium)</option>
+                                    <option value="pixel-16">Pixel 16px (Chunky)</option>
+                                    <option value="pixel-24">Pixel 24px (Very Chunky)</option>
+                                </optgroup>
+                                <optgroup label="── PIXEL + BLUR (Smooth Look) ──">
+                                    <option value="pixel-blur-light">Pixel + Light Blur</option>
+                                    <option value="pixel-blur-medium">Pixel + Medium Blur</option>
+                                    <option value="pixel-blur-heavy">Pixel + Heavy Blur</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
@@ -841,7 +849,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'box-30';
+        let selectedMethod = 'pixel-8';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1232,16 +1240,18 @@
             
             // Short labels for each effect
             const labels = {
-                'box-5': '5',
-                'box-10': '10',
-                'box-20': '20',
-                'box-30': '30',
-                'box-50': '50',
-                'box-75': '75',
-                'box-100': '100',
-                'box-150': '150',
-                'box-200': '200',
-                'box-250': '250'
+                'black': '■',
+                'white': '□',
+                'gray': '▣',
+                'color-fill': 'CF',
+                'noise': '░',
+                'pixel-4': 'P4',
+                'pixel-8': 'P8',
+                'pixel-16': 'P16',
+                'pixel-24': 'P24',
+                'pixel-blur-light': 'PBL',
+                'pixel-blur-medium': 'PBM',
+                'pixel-blur-heavy': 'PBH'
             };
             
             // Draw all masks for current video
@@ -1275,16 +1285,18 @@
             }
             
             const effectNames = {
-                'box-5': 'Box 5×5',
-                'box-10': 'Box 10×10',
-                'box-20': 'Box 20×20',
-                'box-30': 'Box 30×30',
-                'box-50': 'Box 50×50',
-                'box-75': 'Box 75×75',
-                'box-100': 'Box 100×100',
-                'box-150': 'Box 150×150',
-                'box-200': 'Box 200×200',
-                'box-250': 'Box 250×250'
+                'black': 'Black Fill',
+                'white': 'White Fill',
+                'gray': 'Gray Fill',
+                'color-fill': 'Color Match',
+                'noise': 'Noise',
+                'pixel-4': 'Pixel 4px',
+                'pixel-8': 'Pixel 8px',
+                'pixel-16': 'Pixel 16px',
+                'pixel-24': 'Pixel 24px',
+                'pixel-blur-light': 'Pixel + Light Blur',
+                'pixel-blur-medium': 'Pixel + Medium Blur',
+                'pixel-blur-heavy': 'Pixel + Heavy Blur'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
