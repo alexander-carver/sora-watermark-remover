@@ -379,28 +379,6 @@
             border-color: var(--accent);
         }
 
-        .effect-dropdown {
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            border: 1px solid var(--accent);
-            background: var(--bg-primary);
-            color: var(--accent);
-            min-width: 160px;
-        }
-
-        .effect-dropdown:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px var(--accent-glow);
-        }
-
-        .effect-dropdown option {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            padding: 8px;
-        }
 
         .toolbar-divider {
             width: 1px;
@@ -770,28 +748,8 @@
                         
                         <div class="toolbar-divider"></div>
                         
-                        <div class="toolbar-group effect-buttons">
-                            <span class="toolbar-label">Redaction:</span>
-                            <select id="effect-select" class="effect-dropdown">
-                                <optgroup label="── OPAQUE FILL (Most Secure) ──">
-                                    <option value="black">Black</option>
-                                    <option value="white">White</option>
-                                    <option value="gray">Gray</option>
-                                    <option value="color-fill">Color Match</option>
-                                    <option value="noise">Noise (Unreversible)</option>
-                                </optgroup>
-                                <optgroup label="── PIXELATION / MOSAIC ──">
-                                    <option value="pixel-4">Pixel 4px (Fine)</option>
-                                    <option value="pixel-8" selected>Pixel 8px (Medium)</option>
-                                    <option value="pixel-16">Pixel 16px (Chunky)</option>
-                                    <option value="pixel-24">Pixel 24px (Very Chunky)</option>
-                                </optgroup>
-                                <optgroup label="── PIXEL + BLUR (Smooth Look) ──">
-                                    <option value="pixel-blur-light">Pixel + Light Blur</option>
-                                    <option value="pixel-blur-medium">Pixel + Medium Blur</option>
-                                    <option value="pixel-blur-heavy">Pixel + Heavy Blur</option>
-                                </optgroup>
-                            </select>
+                        <div class="toolbar-group">
+                            <span class="toolbar-label" style="color: var(--accent);">Effect: Heavy Mosaic</span>
                         </div>
                     </div>
 
@@ -849,7 +807,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'pixel-8';
+        let selectedMethod = 'mosaic';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1085,13 +1043,8 @@
             }, 100);
         });
 
-        // Method selection via dropdown
-        const effectSelect = document.getElementById('effect-select');
-        if (effectSelect) {
-            effectSelect.addEventListener('change', (e) => {
-                selectedMethod = e.target.value;
-            });
-        }
+        // Single effect - heavy mosaic
+        // No selection needed
 
         // Drawing handlers - Mouse
         drawingCanvas.addEventListener('mousedown', (e) => {
@@ -1240,18 +1193,7 @@
             
             // Short labels for each effect
             const labels = {
-                'black': '■',
-                'white': '□',
-                'gray': '▣',
-                'color-fill': 'CF',
-                'noise': '░',
-                'pixel-4': 'P4',
-                'pixel-8': 'P8',
-                'pixel-16': 'P16',
-                'pixel-24': 'P24',
-                'pixel-blur-light': 'PBL',
-                'pixel-blur-medium': 'PBM',
-                'pixel-blur-heavy': 'PBH'
+                'mosaic': 'M'
             };
             
             // Draw all masks for current video
@@ -1285,18 +1227,7 @@
             }
             
             const effectNames = {
-                'black': 'Black Fill',
-                'white': 'White Fill',
-                'gray': 'Gray Fill',
-                'color-fill': 'Color Match',
-                'noise': 'Noise',
-                'pixel-4': 'Pixel 4px',
-                'pixel-8': 'Pixel 8px',
-                'pixel-16': 'Pixel 16px',
-                'pixel-24': 'Pixel 24px',
-                'pixel-blur-light': 'Pixel + Light Blur',
-                'pixel-blur-medium': 'Pixel + Medium Blur',
-                'pixel-blur-heavy': 'Pixel + Heavy Blur'
+                'mosaic': 'Heavy Mosaic'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
