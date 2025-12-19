@@ -75,99 +75,73 @@ def extract_preview_frame(video_path, frame_number=0):
     return None
 
 
-def apply_effect(frame, mask, method='blur'):
-    """Apply effect to remove/hide watermark from a frame."""
+def apply_effect(frame, mask, method='box-30'):
+    """Apply box blur effect with different kernel sizes."""
     frame_copy = frame.copy()
     
-    # 1. GAUSSIAN LIGHT - Subtle blur
-    if method == 'gaussian-light':
-        blurred = cv2.GaussianBlur(frame, (21, 21), 10)
+    # 1. BOX 5x5 - Very subtle
+    if method == 'box-5':
+        blurred = cv2.blur(frame, (5, 5))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 2. GAUSSIAN MEDIUM - Standard blur
-    elif method == 'gaussian-medium':
-        blurred = cv2.GaussianBlur(frame, (51, 51), 25)
+    # 2. BOX 10x10 - Light
+    elif method == 'box-10':
+        blurred = cv2.blur(frame, (10, 10))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 3. GAUSSIAN HEAVY - Strong blur
-    elif method == 'gaussian-heavy':
-        blurred = cv2.GaussianBlur(frame, (99, 99), 50)
+    # 3. BOX 20x20 - Mild
+    elif method == 'box-20':
+        blurred = cv2.blur(frame, (20, 20))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 4. BOX BLUR - Uniform averaging blur
-    elif method == 'box':
-        blurred = cv2.blur(frame, (40, 40))
+    # 4. BOX 30x30 - Medium (default)
+    elif method == 'box-30':
+        blurred = cv2.blur(frame, (30, 30))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 5. BILATERAL - Edge-preserving blur (natural look)
-    elif method == 'bilateral':
-        blurred = cv2.bilateralFilter(frame, 15, 75, 75)
+    # 5. BOX 50x50 - Strong
+    elif method == 'box-50':
+        blurred = cv2.blur(frame, (50, 50))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 6. MEDIAN - Good for removing noise/text
-    elif method == 'median':
-        blurred = cv2.medianBlur(frame, 31)
+    # 6. BOX 75x75 - Heavy
+    elif method == 'box-75':
+        blurred = cv2.blur(frame, (75, 75))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 7. MOTION BLUR - Directional blur effect
-    elif method == 'motion':
-        kernel_size = 30
-        kernel = np.zeros((kernel_size, kernel_size))
-        kernel[int((kernel_size-1)/2), :] = np.ones(kernel_size)
-        kernel = kernel / kernel_size
-        blurred = cv2.filter2D(frame, -1, kernel)
+    # 7. BOX 100x100 - Very heavy
+    elif method == 'box-100':
+        blurred = cv2.blur(frame, (100, 100))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 8. PIXELATE - Mosaic effect
-    elif method == 'pixelate':
-        coords = np.where(mask > 0)
-        if len(coords[0]) > 0:
-            y1, y2 = coords[0].min(), coords[0].max()
-            x1, x2 = coords[1].min(), coords[1].max()
-            roi = frame[y1:y2, x1:x2]
-            h, w = roi.shape[:2]
-            if h > 0 and w > 0:
-                pixel_size = 10
-                small = cv2.resize(roi, (max(1, w//pixel_size), max(1, h//pixel_size)), interpolation=cv2.INTER_LINEAR)
-                pixelated = cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
-                frame_copy[y1:y2, x1:x2] = pixelated
+    # 8. BOX 150x150 - Extreme
+    elif method == 'box-150':
+        blurred = cv2.blur(frame, (150, 150))
+        frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 9. BLACK FILL - Solid black
-    elif method == 'black':
-        frame_copy[mask > 0] = [0, 0, 0]
+    # 9. BOX 200x200 - Maximum
+    elif method == 'box-200':
+        blurred = cv2.blur(frame, (200, 200))
+        frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # 10. COLOR MATCH - Sample nearby color
-    elif method == 'color-match':
-        coords = np.where(mask > 0)
-        if len(coords[0]) > 0:
-            y1, y2 = coords[0].min(), coords[0].max()
-            x1, x2 = coords[1].min(), coords[1].max()
-            # Sample average color from border around the region
-            border = 10
-            top_strip = frame[max(0,y1-border):y1, x1:x2] if y1 > border else None
-            left_strip = frame[y1:y2, max(0,x1-border):x1] if x1 > border else None
-            colors = []
-            if top_strip is not None and top_strip.size > 0:
-                colors.append(np.mean(top_strip, axis=(0,1)))
-            if left_strip is not None and left_strip.size > 0:
-                colors.append(np.mean(left_strip, axis=(0,1)))
-            if colors:
-                avg_color = np.mean(colors, axis=0).astype(np.uint8)
-                frame_copy[mask > 0] = avg_color
+    # 10. BOX 250x250 - Ultra
+    elif method == 'box-250':
+        blurred = cv2.blur(frame, (250, 250))
+        frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
     
-    # Default - medium gaussian
+    # Default - box 30
     else:
-        blurred = cv2.GaussianBlur(frame, (51, 51), 25)
+        blurred = cv2.blur(frame, (30, 30))
         frame_copy[mask > 0] = blurred[mask > 0]
         return frame_copy
 

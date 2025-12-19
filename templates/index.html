@@ -771,18 +771,18 @@
                         <div class="toolbar-divider"></div>
                         
                         <div class="toolbar-group effect-buttons">
-                            <span class="toolbar-label">Effect:</span>
+                            <span class="toolbar-label">Box Blur:</span>
                             <select id="effect-select" class="effect-dropdown">
-                                <option value="gaussian-light">Gaussian Light</option>
-                                <option value="gaussian-medium" selected>Gaussian Medium</option>
-                                <option value="gaussian-heavy">Gaussian Heavy</option>
-                                <option value="box">Box Blur</option>
-                                <option value="bilateral">Bilateral (Natural)</option>
-                                <option value="median">Median (Clean)</option>
-                                <option value="motion">Motion Blur</option>
-                                <option value="pixelate">Pixelate</option>
-                                <option value="black">Black Fill</option>
-                                <option value="color-match">Color Match</option>
+                                <option value="box-5">5×5 (Subtle)</option>
+                                <option value="box-10">10×10 (Light)</option>
+                                <option value="box-20">20×20 (Mild)</option>
+                                <option value="box-30" selected>30×30 (Medium)</option>
+                                <option value="box-50">50×50 (Strong)</option>
+                                <option value="box-75">75×75 (Heavy)</option>
+                                <option value="box-100">100×100 (Very Heavy)</option>
+                                <option value="box-150">150×150 (Extreme)</option>
+                                <option value="box-200">200×200 (Maximum)</option>
+                                <option value="box-250">250×250 (Ultra)</option>
                             </select>
                         </div>
                     </div>
@@ -841,7 +841,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'gaussian-medium';
+        let selectedMethod = 'box-30';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1232,16 +1232,16 @@
             
             // Short labels for each effect
             const labels = {
-                'gaussian-light': 'GL',
-                'gaussian-medium': 'GM',
-                'gaussian-heavy': 'GH',
-                'box': 'BX',
-                'bilateral': 'BL',
-                'median': 'MD',
-                'motion': 'MT',
-                'pixelate': 'PX',
-                'black': '■',
-                'color-match': 'CM'
+                'box-5': '5',
+                'box-10': '10',
+                'box-20': '20',
+                'box-30': '30',
+                'box-50': '50',
+                'box-75': '75',
+                'box-100': '100',
+                'box-150': '150',
+                'box-200': '200',
+                'box-250': '250'
             };
             
             // Draw all masks for current video
@@ -1275,16 +1275,16 @@
             }
             
             const effectNames = {
-                'gaussian-light': 'Gaussian Light',
-                'gaussian-medium': 'Gaussian Medium',
-                'gaussian-heavy': 'Gaussian Heavy',
-                'box': 'Box Blur',
-                'bilateral': 'Bilateral',
-                'median': 'Median',
-                'motion': 'Motion Blur',
-                'pixelate': 'Pixelate',
-                'black': 'Black Fill',
-                'color-match': 'Color Match'
+                'box-5': 'Box 5×5',
+                'box-10': 'Box 10×10',
+                'box-20': 'Box 20×20',
+                'box-30': 'Box 30×30',
+                'box-50': 'Box 50×50',
+                'box-75': 'Box 75×75',
+                'box-100': 'Box 100×100',
+                'box-150': 'Box 150×150',
+                'box-200': 'Box 200×200',
+                'box-250': 'Box 250×250'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
