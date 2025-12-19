@@ -379,44 +379,27 @@
             border-color: var(--accent);
         }
 
-        .tool-btn.blur, .tool-btn[data-method="blur"] {
-            border-color: var(--telea-color);
-            color: var(--telea-color);
+        .effect-dropdown {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--accent);
+            background: var(--bg-primary);
+            color: var(--accent);
+            min-width: 160px;
         }
 
-        .tool-btn.blur.active, .tool-btn[data-method="blur"].active {
-            background: var(--telea-color);
-            color: #000;
+        .effect-dropdown:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--accent-glow);
         }
 
-        .tool-btn.blur-light, .tool-btn[data-method="blur-light"] {
-            border-color: #66ccff;
-            color: #66ccff;
-        }
-
-        .tool-btn.blur-light.active, .tool-btn[data-method="blur-light"].active {
-            background: #66ccff;
-            color: #000;
-        }
-
-        .tool-btn.pixelate, .tool-btn[data-method="pixelate"] {
-            border-color: var(--ns-color);
-            color: var(--ns-color);
-        }
-
-        .tool-btn.pixelate.active, .tool-btn[data-method="pixelate"].active {
-            background: var(--ns-color);
-            color: #000;
-        }
-
-        .tool-btn.black, .tool-btn[data-method="black"] {
-            border-color: #888;
-            color: #888;
-        }
-
-        .tool-btn.black.active, .tool-btn[data-method="black"].active {
-            background: #888;
-            color: #000;
+        .effect-dropdown option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 8px;
         }
 
         .toolbar-divider {
@@ -471,10 +454,7 @@
             border-radius: 4px;
         }
 
-        .mask-color.blur { background: var(--telea-color); }
-        .mask-color.blur-light { background: #66ccff; }
-        .mask-color.pixelate { background: var(--ns-color); }
-        .mask-color.black { background: #888; }
+        .mask-color { background: var(--accent); }
 
         .mask-info {
             flex: 1;
@@ -790,12 +770,20 @@
                         
                         <div class="toolbar-divider"></div>
                         
-                        <div class="toolbar-group">
+                        <div class="toolbar-group effect-buttons">
                             <span class="toolbar-label">Effect:</span>
-                            <button class="tool-btn blur active" data-method="blur">Heavy Blur</button>
-                            <button class="tool-btn blur-light" data-method="blur-light">Light Blur</button>
-                            <button class="tool-btn pixelate" data-method="pixelate">Pixelate</button>
-                            <button class="tool-btn black" data-method="black">Black</button>
+                            <select id="effect-select" class="effect-dropdown">
+                                <option value="gaussian-light">Gaussian Light</option>
+                                <option value="gaussian-medium" selected>Gaussian Medium</option>
+                                <option value="gaussian-heavy">Gaussian Heavy</option>
+                                <option value="box">Box Blur</option>
+                                <option value="bilateral">Bilateral (Natural)</option>
+                                <option value="median">Median (Clean)</option>
+                                <option value="motion">Motion Blur</option>
+                                <option value="pixelate">Pixelate</option>
+                                <option value="black">Black Fill</option>
+                                <option value="color-match">Color Match</option>
+                            </select>
                         </div>
                     </div>
 
@@ -853,7 +841,7 @@
         let masks = [];
         let maskHistory = [];  // For undo
         let globalMasks = [];
-        let selectedMethod = 'blur';
+        let selectedMethod = 'gaussian-medium';
         let isDrawing = false;
         let drawModeEnabled = false;
         let startX, startY;
@@ -1089,14 +1077,13 @@
             }, 100);
         });
 
-        // Method selection
-        document.querySelectorAll('.tool-btn[data-method]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn[data-method]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedMethod = btn.dataset.method;
+        // Method selection via dropdown
+        const effectSelect = document.getElementById('effect-select');
+        if (effectSelect) {
+            effectSelect.addEventListener('change', (e) => {
+                selectedMethod = e.target.value;
             });
-        });
+        }
 
         // Drawing handlers - Mouse
         drawingCanvas.addEventListener('mousedown', (e) => {
@@ -1192,19 +1179,11 @@
         function drawSelection(currentX, currentY) {
             redrawCanvas();
             
-            // Draw current selection with method-specific colors
-            const colors = {
-                'blur': { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff' },
-                'blur-light': { fill: 'rgba(102, 204, 255, 0.3)', stroke: '#66ccff' },
-                'pixelate': { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa' },
-                'black': { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888' }
-            };
-            const style = colors[selectedMethod] || colors.blur;
-            
-            ctx.fillStyle = style.fill;
+            // Draw current selection
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.25)';
             ctx.fillRect(startX, startY, currentX - startX, currentY - startY);
             
-            ctx.strokeStyle = style.stroke;
+            ctx.strokeStyle = '#00ff88';
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
@@ -1251,12 +1230,18 @@
         function redrawCanvas() {
             ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
             
-            // Color scheme for each effect
-            const colors = {
-                'blur': { fill: 'rgba(0, 170, 255, 0.3)', stroke: '#00aaff', label: 'HB' },
-                'blur-light': { fill: 'rgba(102, 204, 255, 0.3)', stroke: '#66ccff', label: 'LB' },
-                'pixelate': { fill: 'rgba(255, 102, 170, 0.3)', stroke: '#ff66aa', label: 'PX' },
-                'black': { fill: 'rgba(136, 136, 136, 0.3)', stroke: '#888888', label: '■' }
+            // Short labels for each effect
+            const labels = {
+                'gaussian-light': 'GL',
+                'gaussian-medium': 'GM',
+                'gaussian-heavy': 'GH',
+                'box': 'BX',
+                'bilateral': 'BL',
+                'median': 'MD',
+                'motion': 'MT',
+                'pixelate': 'PX',
+                'black': '■',
+                'color-match': 'CM'
             };
             
             // Draw all masks for current video
@@ -1267,19 +1252,17 @@
                 const w = mask.width * drawingCanvas.width;
                 const h = mask.height * drawingCanvas.height;
                 
-                const style = colors[mask.method] || colors.blur;
-                
-                ctx.fillStyle = style.fill;
+                ctx.fillStyle = 'rgba(0, 255, 136, 0.25)';
                 ctx.fillRect(x, y, w, h);
                 
-                ctx.strokeStyle = style.stroke;
+                ctx.strokeStyle = '#00ff88';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, y, w, h);
                 
                 // Label
-                ctx.fillStyle = style.stroke;
+                ctx.fillStyle = '#00ff88';
                 ctx.font = 'bold 11px sans-serif';
-                ctx.fillText(style.label, x + 4, y + 14);
+                ctx.fillText(labels[mask.method] || '?', x + 4, y + 14);
             });
         }
 
@@ -1292,10 +1275,16 @@
             }
             
             const effectNames = {
-                'blur': 'Heavy Blur',
-                'blur-light': 'Light Blur',
+                'gaussian-light': 'Gaussian Light',
+                'gaussian-medium': 'Gaussian Medium',
+                'gaussian-heavy': 'Gaussian Heavy',
+                'box': 'Box Blur',
+                'bilateral': 'Bilateral',
+                'median': 'Median',
+                'motion': 'Motion Blur',
                 'pixelate': 'Pixelate',
-                'black': 'Black fill'
+                'black': 'Black Fill',
+                'color-match': 'Color Match'
             };
 
             masksList.innerHTML = allMasks.map((mask, index) => `
