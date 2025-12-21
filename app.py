@@ -167,23 +167,35 @@ def process_video(video_path, mask_data, output_path, callback=None):
             
             if has_audio:
                 print("Original video has audio - merging...")
-                # Merge processed video with original audio
+                # Extract audio from original
+                temp_audio = str(output_path).replace('.mp4', '_temp_audio.aac')
+                extract_audio_cmd = [
+                    ffmpeg_path, '-y',
+                    '-i', str(video_path),
+                    '-vn', '-acodec', 'aac', '-b:a', '192k',
+                    temp_audio
+                ]
+                subprocess.run(extract_audio_cmd, capture_output=True, text=True)
+                
+                # Merge processed video with extracted audio
                 merge_cmd = [
                     ffmpeg_path, '-y',
-                    '-i', temp_video,           # Processed video (no audio)
-                    '-i', str(video_path),      # Original video (has audio)
+                    '-i', temp_video,
+                    '-i', temp_audio,
                     '-c:v', 'libx264', 
                     '-preset', 'fast',
                     '-crf', '20', 
                     '-pix_fmt', 'yuv420p',
-                    '-c:a', 'aac', 
-                    '-b:a', '192k',
-                    '-map', '0:v:0',            # Video from processed
-                    '-map', '1:a:0',            # Audio from original
+                    '-c:a', 'copy',
                     '-shortest',
                     str(output_path)
                 ]
                 result = subprocess.run(merge_cmd, capture_output=True, text=True)
+                
+                # Clean up temp audio
+                if os.path.exists(temp_audio):
+                    os.remove(temp_audio)
+                    
                 if result.returncode != 0:
                     print(f"FFmpeg merge error: {result.stderr}")
                     # Fallback: just re-encode video without audio
