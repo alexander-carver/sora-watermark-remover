@@ -790,7 +790,10 @@
         <div class="section processed-section" id="processed-section" style="display: none;">
             <div class="section-title">PROCESSED VIDEOS</div>
             <div class="processed-grid" id="processed-grid"></div>
-            <div class="controls" style="margin-top: 16px;">
+            <div class="controls" style="margin-top: 16px; display: flex; gap: 12px;">
+                <button class="btn btn-primary btn-small" id="btn-download-all">
+                    📦 Download All as ZIP
+                </button>
                 <button class="btn btn-danger btn-small" id="btn-cleanup">
                     🗑️ Clean Up Temp Files
                 </button>
@@ -1453,6 +1456,11 @@
                 updateButtonStates();
             }
         }
+
+        // Download All button
+        document.getElementById('btn-download-all').addEventListener('click', () => {
+            window.location.href = '/download-all';
+        });
 
         // Cleanup button
         document.getElementById('btn-cleanup').addEventListener('click', async () => {

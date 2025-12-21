@@ -10,10 +10,12 @@ import random
 import string
 import json
 import shutil
+import zipfile
+import io
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, Response
 import cv2
 import numpy as np
 from werkzeug.utils import secure_filename
@@ -475,6 +477,38 @@ def list_processed():
 def download_processed(filename):
     """Download a specific processed file."""
     return send_from_directory(str(PROCESSED_FOLDER), filename, as_attachment=True)
+
+
+@app.route('/download-all')
+def download_all():
+    """Download all processed videos as a zip file."""
+    processed_files = []
+    for f in PROCESSED_FOLDER.iterdir():
+        if f.is_file() and f.suffix.lower() in ['.mp4', '.m4v', '.mov']:
+            processed_files.append(f)
+    
+    if not processed_files:
+        return jsonify({'error': 'No processed files found'}), 404
+    
+    # Create zip in memory
+    zip_buffer = io.BytesIO()
+    
+    try:
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in processed_files:
+                zipf.write(file_path, file_path.name)
+        
+        zip_buffer.seek(0)
+        
+        return Response(
+            zip_buffer.getvalue(),
+            mimetype='application/zip',
+            headers={
+                'Content-Disposition': 'attachment; filename=sora_processed_videos.zip'
+            }
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
